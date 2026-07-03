@@ -56,7 +56,12 @@ logs/*.log
 .vscode/
 .idea/
 
-# pytest
+# pytest / coverage / ruff — locally-generated reports and caches (CI
+# uploads its own copies as workflow artifacts instead; see
+# .github/workflows/ci.yml)
 .pytest_cache/
+.ruff_cache/
 .coverage
 htmlcov/
+coverage.xml
+pytest-report.xml

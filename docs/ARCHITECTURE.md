@@ -1119,6 +1119,16 @@ docs/CAREER_ASSISTANT.md; in short:
   match with analysis exists) — one new, `None`-able context key, no
   changes to any existing route/template behavior for any other page.
 
+## CI/CD
+
+`.github/workflows/ci.yml` — three jobs on every push/PR: `lint` (ruff),
+`test` (pytest + coverage, uploaded as artifacts), and `docker` (build
+the existing Dockerfile and smoke-test `/health` on the built image, no
+config needed). Full design, local-run instructions, and branch
+protection recommendations in docs/CI_CD.md. This project's own git
+history (previously nonexistent — no repo existed before this milestone)
+was initialized as part of adding this.
+
 ## Root files
 
 - **README.md** — quick start and stack overview.

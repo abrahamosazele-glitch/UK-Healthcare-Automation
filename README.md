@@ -1,5 +1,15 @@
 # UK Healthcare Job Automation
 
+<!--
+  Replace OWNER/REPO below once this repo has a real GitHub remote
+  (`git remote add origin https://github.com/OWNER/REPO.git` then
+  `git push -u origin master`) — badges render as broken images
+  until then, since there's no live GitHub Actions run to report on yet.
+  See docs/CI_CD.md.
+-->
+[![CI](https://github.com/OWNER/REPO/actions/workflows/ci.yml/badge.svg)](https://github.com/OWNER/REPO/actions/workflows/ci.yml)
+[![Python 3.13](https://img.shields.io/badge/python-3.13-blue.svg)](https://www.python.org/downloads/)
+
 A UK healthcare job aggregator and application assistant: imports real
 listings from multiple job boards, deduplicates them, scores them against
 your candidate profile with real AI, drafts tailored documents (cover
@@ -111,12 +121,18 @@ To install browser binaries for Playwright-based scraping:
 python -m playwright install chromium
 ```
 
-### Running tests
+### Running tests, lint, and CI locally
 
 ```bash
-python -m pytest
+pip install -r requirements-dev.txt   # adds ruff + pytest-cov on top of requirements.txt
+ruff check .                          # lint — the same command CI runs
+python -m pytest                      # full suite
 ```
 
 No test ever makes a real network call — external APIs (Anthropic, Reed)
 are mocked, and scraped sites (NHS Jobs, Trac Jobs) are served from local
 HTML fixtures under `tests/fixtures/`.
+
+Every check GitHub Actions runs (lint, tests with coverage, the Docker
+build) can be run locally first — see
+[docs/CI_CD.md](docs/CI_CD.md#running-the-same-checks-locally).
