@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html>
+<head><title>Dummy Job Site - Apply</title></head>
+<body>
+<h1>Apply for: Healthcare Assistant</h1>
+
+<label>CV: <input id="cv-upload" type="file"></label><br>
+<label>Cover letter: <input id="cover-letter-upload" type="file"></label><br>
+
+<div class="question">
+  <label for="answer-0">Why do you want this role?</label>
+  <textarea id="answer-0"></textarea>
+</div>
+
+<button id="submit-btn" type="button"
+        onclick="document.getElementById('confirmation').style.display='block';">
+  Submit application
+</button>
+
+<div id="confirmation" style="display:none;">
+  Application submitted successfully. Reference: APP-DUMMY-0001
+</div>
+</body>
+</html>

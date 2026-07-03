@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block title %}Email History{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0">Email History</h1>
+  <div class="d-flex gap-2">
+    <a href="/notifications" class="btn btn-sm btn-outline-secondary">Back to notifications</a>
+    <a href="/notifications/settings" class="btn btn-sm btn-outline-secondary">Notification settings</a>
+  </div>
+</div>
+
+<div class="table-responsive">
+  <table class="table table-sm align-middle">
+    <thead>
+      <tr>
+        <th>Status</th>
+        <th>Subject</th>
+        <th>Type</th>
+        <th>To</th>
+        <th>Queued</th>
+        <th>Sent</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for email in emails %}
+      <tr>
+        <td>{% with status = email.status %}{% include "components/status_badge.html" %}{% endwith %}</td>
+        <td>{{ email.subject }}</td>
+        <td class="text-muted small">{{ email.notification_type.replace('_', ' ')|title }}</td>
+        <td class="text-muted small">{{ email.to_email }}</td>
+        <td class="text-muted small">{{ email.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+        <td class="text-muted small">
+          {% if email.sent_at %}{{ email.sent_at.strftime('%Y-%m-%d %H:%M') }}
+          {% elif email.error_message %}<span class="text-danger" title="{{ email.error_message }}">{{ email.attempts }} attempt(s) failed</span>
+          {% else %}&mdash;{% endif %}
+        </td>
+      </tr>
+      {% else %}
+      <tr><td colspan="6" class="text-muted text-center py-4">No emails queued yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

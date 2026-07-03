@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}Scheduler{% endblock %}
+{% block content %}
+<h1 class="h3 mb-1">Background Scheduler</h1>
+<p class="text-muted small mb-4">
+  Runs automation tasks in the background — most against local/fixture data
+  only, but "Import Provider Jobs" pulls real listings from configured job
+  boards and "Run Ai Matching" continues to use a placeholder provider.
+  Real AI document generation is never automatic — every draft still
+  requires an explicit click, and no task submits an application.
+</p>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header">Registered tasks</div>
+  <div class="table-responsive">
+    <table class="table table-hover align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Task</th>
+          <th>Description</th>
+          <th>Interval</th>
+          <th>Last run</th>
+          <th></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for task in tasks %}
+        <tr>
+          <td class="fw-medium">{{ task.name.replace('_', ' ')|title }}</td>
+          <td class="small text-muted">{{ task.description }}</td>
+          <td class="small">every {{ (task.interval_seconds / 60)|round(1) }} min</td>
+          <td>
+            {% set run = latest_runs.get(task.name) %}
+            {% if run %}
+              {% with status = run.status.value %}{% include "components/status_badge.html" %}{% endwith %}
+              <span class="text-muted small ms-1">{{ run.started_at.strftime('%Y-%m-%d %H:%M') }}</span>
+            {% else %}
+              <span class="text-muted small">never run</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <form method="post" action="/scheduler/{{ task.name }}/run" class="d-inline">
+              <button type="submit" class="btn btn-sm btn-outline-primary">Run now</button>
+            </form>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<div class="card shadow-sm">
+  <div class="card-header">Recent run history</div>
+  <div class="table-responsive">
+    <table class="table table-sm align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Task</th>
+          <th>Status</th>
+          <th>Triggered by</th>
+          <th>Attempt</th>
+          <th>Started</th>
+          <th>Finished</th>
+          <th>Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for run in history %}
+        <tr>
+          <td>{{ run.task_name.replace('_', ' ')|title }}</td>
+          <td>{% with status = run.status.value %}{% include "components/status_badge.html" %}{% endwith %}</td>
+          <td class="small text-muted">{{ run.triggered_by }}</td>
+          <td class="small">{{ run.attempt }}/{{ run.max_attempts }}</td>
+          <td class="small">{{ run.started_at.strftime('%Y-%m-%d %H:%M:%S') }}</td>
+          <td class="small">{{ run.finished_at.strftime('%Y-%m-%d %H:%M:%S') if run.finished_at else '—' }}</td>
+          <td class="small text-muted">
+            {% if run.error_message %}
+              <span class="text-danger">{{ run.error_message }}</span>
+            {% elif run.result_summary %}
+              {{ run.result_summary }}
+            {% endif %}
+          </td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-muted text-center py-3">No runs yet — click "Run now" above to try one.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

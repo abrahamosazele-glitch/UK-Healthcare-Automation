@@ -1,0 +1,42 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "uk-healthcare-job-automation"
+version = "0.1.0"
+description = "AI-powered search, tracking, and application automation for UK healthcare jobs"
+requires-python = ">=3.11"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+
+[tool.ruff]
+target-version = "py311"
+# Ruff's own default rule selection (E4, E7, E9, F) — deliberately not
+# opting into the full "E" pycodestyle set (E501 line-too-long especially):
+# this codebase's established style favors long, explanatory docstrings/
+# comments over strict line wrapping, and retrofitting that would be a
+# purely cosmetic, high-diff change unrelated to catching real bugs.
+
+[tool.ruff.lint.per-file-ignores]
+# Both scripts deliberately import after mutating `sys.path` (`tests/` and
+# a not-yet-installed `job_automation` aren't otherwise importable from a
+# standalone script invocation) — see each script's own module docstring.
+"scripts/verify_live_production.py" = ["E402"]
+"scripts/verify_scraper_framework.py" = ["E402"]
+
+[tool.coverage.run]
+source = ["job_automation"]
+omit = ["*/database/migrations/versions/*"]
+
+[tool.coverage.report]
+# Excludes the same "this line can't realistically execute" cases the
+# codebase's own comments already flag with `# pragma: no cover` (e.g.
+# career_assistant_service.py's 0.0-floor fallback branch) — not a
+# blanket exemption, just honoring markers already in the source.
+exclude_lines = ["pragma: no cover", "if TYPE_CHECKING:"]

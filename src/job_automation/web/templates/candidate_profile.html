@@ -1,0 +1,143 @@
+{% extends "base.html" %}
+{% block title %}Candidate Profile{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Candidate Profile</h1>
+
+{% if not profile %}
+<div class="alert alert-warning">No candidate profile found yet. Load one via <code>ProfileService.load_and_save_from_file()</code> (see docs/CANDIDATE_PROFILE.md) to populate this page.</div>
+{% else %}
+
+<div class="row g-4">
+  <div class="col-md-6">
+    <form method="post" action="/candidate/personal-information" class="card shadow-sm">
+      <div class="card-header">Personal Information</div>
+      <div class="card-body">
+        <div class="mb-2">
+          <label class="form-label small">Full name</label>
+          <input type="text" name="full_name" class="form-control" value="{{ profile.personal_information.full_name }}" required>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small">Email</label>
+          <input type="email" name="email" class="form-control" value="{{ profile.personal_information.email or '' }}">
+        </div>
+        <div class="mb-2">
+          <label class="form-label small">Phone</label>
+          <input type="text" name="phone" class="form-control" value="{{ profile.personal_information.phone or '' }}">
+        </div>
+        <div class="mb-2">
+          <label class="form-label small">Address</label>
+          <input type="text" name="address" class="form-control" value="{{ profile.personal_information.address or '' }}">
+        </div>
+        <div class="mb-2">
+          <label class="form-label small">Personal statement</label>
+          <textarea name="personal_statement" class="form-control" rows="3">{{ profile.personal_information.personal_statement or '' }}</textarea>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Save</button>
+      </div>
+    </form>
+
+    <form method="post" action="/candidate/visa-status" class="card shadow-sm mt-4">
+      <div class="card-header">Visa Status</div>
+      <div class="card-body">
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" name="right_to_work_uk" value="true" id="rtwCheck"
+                 {% if profile.visa_status.right_to_work_uk %}checked{% endif %}>
+          <label class="form-check-label" for="rtwCheck">Right to work in the UK</label>
+        </div>
+        <div class="mb-2">
+          <label class="form-label small">Visa type</label>
+          <input type="text" name="visa_type" class="form-control" value="{{ profile.visa_status.visa_type or '' }}">
+        </div>
+        <div class="form-check mb-2">
+          <input class="form-check-input" type="checkbox" name="sponsorship_required" value="true" id="sponsorshipCheck"
+                 {% if profile.visa_status.sponsorship_required %}checked{% endif %}>
+          <label class="form-check-label" for="sponsorshipCheck">Sponsorship required</label>
+        </div>
+        <button type="submit" class="btn btn-primary btn-sm">Save</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        Preferences
+        <a href="/settings" class="btn btn-sm btn-outline-primary">Edit in Settings</a>
+      </div>
+      <div class="card-body">
+        <p class="mb-1"><strong>Locations:</strong> {{ profile.preferences.preferred_locations|join(', ') or 'No preference' }}</p>
+        <p class="mb-1"><strong>Minimum salary:</strong> {{ profile.preferences.preferred_salary_min or 'No preference' }}</p>
+        <p class="mb-1"><strong>NHS band:</strong> {{ profile.preferences.preferred_nhs_band or 'No preference' }}</p>
+        <p class="mb-1"><strong>Working pattern:</strong> {{ profile.preferences.preferred_working_pattern or 'No preference' }}</p>
+        <p class="mb-0"><strong>Max travel distance:</strong> {{ profile.preferences.max_travel_distance_miles or 'No preference' }} miles</p>
+      </div>
+    </div>
+
+    <div class="card shadow-sm mt-4">
+      <div class="card-header">Skills</div>
+      <div class="card-body">
+        {% for skill in profile.skills %}<span class="badge bg-secondary-subtle text-secondary-emphasis me-1 mb-1">{{ skill.replace('_', ' ') }}</span>{% else %}<span class="text-muted">None listed</span>{% endfor %}
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4 mt-1">
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-header">Employment History</div>
+      <ul class="list-group list-group-flush">
+        {% for entry in profile.employment_history %}
+        <li class="list-group-item">
+          <strong>{{ entry.job_title }}</strong><br>
+          <span class="text-muted small">{{ entry.employer or 'Unknown employer' }} &middot; {{ entry.start_date or '?' }} - {{ entry.end_date or 'present' }}</span>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">None listed</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-header">Education</div>
+      <ul class="list-group list-group-flush">
+        {% for entry in profile.education %}
+        <li class="list-group-item">{{ entry.qualification }}<br><span class="text-muted small">{{ entry.awarding_body or '' }} {{ entry.year or '' }}</span></li>
+        {% else %}
+        <li class="list-group-item text-muted">None listed</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-header">Certificates</div>
+      <ul class="list-group list-group-flush">
+        {% for cert in profile.certificates %}
+        <li class="list-group-item">{{ cert.name }}{% if cert.expiry_date %}<br><span class="text-muted small">Expires {{ cert.expiry_date }}</span>{% endif %}</li>
+        {% else %}
+        <li class="list-group-item text-muted">None listed</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+{% if profile.career_goals %}
+<div class="card shadow-sm mt-4">
+  <div class="card-header">Career Goals</div>
+  <ul class="list-group list-group-flush">
+    {% for goal in profile.career_goals %}<li class="list-group-item">{{ goal }}</li>{% endfor %}
+  </ul>
+</div>
+{% endif %}
+
+<p class="text-muted small mt-3">
+  Employment history, education, and certificates are shown read-only here —
+  editing those requires a dynamic list editor (add/remove entries), which is
+  a future extension (see docs/DASHBOARD.md). Personal information,
+  preferences, and visa status are fully editable above.
+</p>
+{% endif %}
+{% endblock %}

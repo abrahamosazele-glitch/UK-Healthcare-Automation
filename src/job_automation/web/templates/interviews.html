@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}Interviews{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0">Interviews</h1>
+  <a href="/interviews/new" class="btn btn-primary btn-sm">+ Schedule interview</a>
+</div>
+
+<form method="get" action="/interviews" class="row g-2 mb-4 align-items-end">
+  <div class="col-md-4">
+    <label class="form-label small">Status</label>
+    <select name="status" class="form-select form-select-sm">
+      <option value="">Any</option>
+      {% for status in interview_statuses %}
+      <option value="{{ status.value }}" {% if status_filter == status.value %}selected{% endif %}>
+        {{ status.value.replace('_', ' ')|title }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <button type="submit" class="btn btn-outline-primary btn-sm w-100">Filter</button>
+  </div>
+</form>
+
+<div class="list-group">
+  {% for interview in interviews %}
+  <a href="/interviews/{{ interview.id }}" class="list-group-item list-group-item-action">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <strong>{{ interview.employer.name if interview.employer else 'Unknown employer' }}</strong>
+        <span class="text-muted small ms-2">{{ interview.interview_type.replace('_', ' ')|title }}</span>
+        {% if interview.interview_stage %}
+        <span class="text-muted small">&middot; {{ interview.interview_stage.replace('_', ' ')|title }}</span>
+        {% endif %}
+      </div>
+      {% with status = interview.status %}{% include "components/status_badge.html" %}{% endwith %}
+    </div>
+    <div class="text-muted small mt-1">{{ interview.scheduled_at.strftime('%Y-%m-%d %H:%M') }}</div>
+  </a>
+  {% else %}
+  <p class="text-muted">No interviews match these filters.</p>
+  {% endfor %}
+</div>
+{% endblock %}

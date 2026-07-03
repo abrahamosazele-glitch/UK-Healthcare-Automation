@@ -1,0 +1,37 @@
+{
+  "_comment": "Copy to candidate_profile.json and fill in real details. Feeds ai.cv_generator, ai.cover_letter_generator, and ai.profile_builder (the AI matching engine).",
+  "full_name": "",
+  "email": "",
+  "phone": "",
+  "address": "",
+  "personal_statement": "",
+  "work_experience": [
+    {
+      "job_title": "",
+      "employer": "",
+      "location": "",
+      "start_date": "",
+      "end_date": "",
+      "responsibilities": []
+    }
+  ],
+  "qualifications": [
+    {
+      "name": "",
+      "awarding_body": "",
+      "year": ""
+    }
+  ],
+  "skills": [],
+  "certifications": ["DBS Check", "Manual Handling", "Basic Life Support"],
+  "right_to_work_uk": true,
+  "references_available_on_request": true,
+
+  "_comment_matching_preferences": "Used only by the AI matching engine (ai.profile_builder) to score jobs against your preferences.",
+  "preferred_locations": [],
+  "preferred_salary_min": null,
+  "preferred_band": null,
+  "visa_sponsorship_required": null,
+  "working_pattern_preference": null,
+  "keywords": []
+}

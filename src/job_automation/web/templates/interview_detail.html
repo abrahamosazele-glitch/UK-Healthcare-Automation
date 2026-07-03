@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+{% block title %}Interview — {{ interview.employer.name if interview.employer else '' }}{% endblock %}
+{% block content %}
+<a href="/interviews" class="btn btn-sm btn-outline-secondary mb-3">&larr; Back to interviews</a>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <h1 class="h4 mb-1">
+          {{ interview.employer.name if interview.employer else 'Unknown employer' }}
+          <a href="/employers/{{ interview.employer_id }}" class="small">(view employer)</a>
+        </h1>
+        <span class="badge bg-secondary">{{ interview.interview_type.replace('_', ' ')|title }}</span>
+        {% if interview.interview_stage %}
+        <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ interview.interview_stage.replace('_', ' ')|title }}</span>
+        {% endif %}
+      </div>
+      {% with status = interview.status %}{% include "components/status_badge.html" %}{% endwith %}
+    </div>
+    <p class="mb-1 mt-2">
+      <strong>{{ interview.scheduled_at.strftime('%Y-%m-%d %H:%M') }}</strong>
+      {% if interview.timezone %}({{ interview.timezone }}){% endif %}
+      {% if interview.duration_minutes %}&middot; {{ interview.duration_minutes }} minutes{% endif %}
+    </p>
+    {% if interview.location %}<p class="mb-1">&#128205; {{ interview.location }}</p>{% endif %}
+    {% if interview.meeting_link %}<p class="mb-1"><a href="{{ interview.meeting_link }}" target="_blank" rel="noopener">{{ interview.meeting_link }}</a></p>{% endif %}
+    {% if interview.interviewer_names %}
+    <p class="mb-1 text-muted small">Interviewer(s): {{ interview.interviewer_names|join(', ') }}</p>
+    {% endif %}
+    {% if interview.contact %}
+    <p class="mb-1 text-muted small">Recruiter contact: {{ interview.contact.name }}</p>
+    {% endif %}
+    {% if interview.outcome %}<p class="mb-1"><strong>Outcome:</strong> {{ interview.outcome }}</p>{% endif %}
+    {% if interview.notes %}<p class="mb-0 text-muted">{{ interview.notes }}</p>{% endif %}
+  </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header">Status</div>
+  <div class="card-body">
+    {% if next_statuses %}
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      {% for status in next_statuses %}
+      <form method="post" action="/interviews/{{ interview.id }}/status" class="d-inline">
+        <input type="hidden" name="target_status" value="{{ status.value }}">
+        <button type="submit" class="btn btn-sm {{ 'btn-outline-danger' if status.value in ('cancelled', 'rejected', 'missed') else 'btn-outline-primary' }}">
+          Mark {{ status.value.replace('_', ' ')|title }}
+        </button>
+      </form>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="text-muted small mb-3">This interview is in a final state — no further status moves available.</p>
+    {% endif %}
+
+    <form method="post" action="/interviews/{{ interview.id }}/reschedule" class="row g-2">
+      <div class="col-md-6">
+        <input type="datetime-local" name="new_scheduled_at" class="form-control form-control-sm" required>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-sm btn-outline-secondary w-100">Reschedule</button>
+      </div>
+    </form>
+
+    {% if has_linked_workflow %}
+    <hr>
+    <h6 class="small text-muted">Sync linked application</h6>
+    <div class="d-flex flex-wrap gap-2">
+      <form method="post" action="/interviews/{{ interview.id }}/workflow-sync">
+        <input type="hidden" name="action" value="mark_interview">
+        <button type="submit" class="btn btn-sm btn-outline-info">Mark application: Interview</button>
+      </form>
+      <form method="post" action="/interviews/{{ interview.id }}/workflow-sync">
+        <input type="hidden" name="action" value="mark_offer">
+        <button type="submit" class="btn btn-sm btn-outline-success">Mark application: Offer</button>
+      </form>
+      <form method="post" action="/interviews/{{ interview.id }}/workflow-sync">
+        <input type="hidden" name="action" value="close_rejected">
+        <button type="submit" class="btn btn-sm btn-outline-danger">Close application: Rejected</button>
+      </form>
+    </div>
+    <p class="text-muted small mt-2 mb-0">These only change the linked application when you click them — nothing here happens automatically.</p>
+    {% endif %}
+  </div>
+</div>
+
+{% if interview.job %}
+<div class="card shadow-sm mb-4">
+  <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h6 class="mb-1">AI interview preparation</h6>
+      <p class="text-muted small mb-0">Generate likely questions, talking points, and reminders tailored to {{ interview.job.title }}.</p>
+    </div>
+    <form method="post" action="/interviews/{{ interview.id }}/generate-prep">
+      <button type="submit" class="btn btn-sm btn-primary">Generate prep notes</button>
+    </form>
+  </div>
+</div>
+{% endif %}
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>Preparation checklist</span>
+    <span class="badge bg-primary-subtle text-primary-emphasis">{{ completion_percent }}% complete</span>
+  </div>
+  <ul class="list-group list-group-flush">
+    {% for item in checklist %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      <span class="{{ 'text-decoration-line-through text-muted' if item.is_complete else '' }}">{{ item.label }}</span>
+      <span class="d-flex gap-2">
+        <form method="post" action="/interviews/{{ interview.id }}/checklist/{{ item.id }}/toggle">
+          <button type="submit" class="btn btn-sm btn-outline-secondary">{{ 'Undo' if item.is_complete else 'Done' }}</button>
+        </form>
+        <form method="post" action="/interviews/{{ interview.id }}/checklist/{{ item.id }}/remove">
+          <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+        </form>
+      </span>
+    </li>
+    {% else %}
+    <li class="list-group-item text-muted small">No checklist items yet.</li>
+    {% endfor %}
+  </ul>
+  <div class="card-body">
+    <form method="post" action="/interviews/{{ interview.id }}/checklist" class="row g-2">
+      <div class="col-md-9">
+        <input type="text" name="label" class="form-control form-control-sm" placeholder="e.g. Research salary bands" required>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-sm btn-outline-primary w-100">Add item</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header">Notes</div>
+  <ul class="list-group list-group-flush">
+    {% for note in notes %}
+    <li class="list-group-item">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ note.category.replace('_', ' ')|title }}</span>
+          <span class="text-muted small ms-2">{{ note.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+          <p class="mb-0 mt-1">{{ note.body }}</p>
+        </div>
+        <form method="post" action="/interviews/{{ interview.id }}/notes/{{ note.id }}/delete">
+          <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+        </form>
+      </div>
+    </li>
+    {% else %}
+    <li class="list-group-item text-muted small">No notes yet.</li>
+    {% endfor %}
+  </ul>
+  <div class="card-body">
+    <form method="post" action="/interviews/{{ interview.id }}/notes" class="row g-2">
+      <div class="col-md-3">
+        <select name="category" class="form-select form-select-sm">
+          {% for category in note_categories %}
+          <option value="{{ category.value }}">{{ category.value.replace('_', ' ')|title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-7">
+        <textarea name="body" class="form-control form-control-sm" rows="1" placeholder="Note" required></textarea>
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-sm btn-outline-primary w-100">Add note</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header">Reminders</div>
+  <ul class="list-group list-group-flush">
+    {% for reminder in reminders %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      <span>{{ reminder.offset.replace('_', ' ')|title }} before &mdash; {{ reminder.remind_at.strftime('%Y-%m-%d %H:%M') }}</span>
+      {% if reminder.is_sent %}<span class="badge bg-secondary">Sent</span>{% else %}<span class="badge bg-info-subtle text-info-emphasis">Pending</span>{% endif %}
+    </li>
+    {% else %}
+    <li class="list-group-item text-muted small">No reminders configured.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endblock %}

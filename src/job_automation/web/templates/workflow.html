@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+{% block title %}Workflow{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Workflow</h1>
+
+{% if workflow %}
+  {# Single-workflow detail view #}
+  <a href="/workflow" class="btn btn-sm btn-outline-secondary mb-3">&larr; All workflows</a>
+  <div class="card shadow-sm mb-4">
+    <div class="card-body">
+      <h5>{{ workflow.job.title }} <span class="text-muted">at {{ workflow.job.employer.name }}</span></h5>
+      <p>Current status: {% with status = workflow.status %}{% include "components/status_badge.html" %}{% endwith %}</p>
+
+      <div class="workflow-pipeline d-flex flex-wrap gap-2 my-3">
+        {% for stage in pipeline_stages %}
+        <span class="badge {% if stage == workflow.status %}bg-primary{% else %}bg-secondary-subtle text-secondary-emphasis{% endif %}">
+          {{ stage.replace('_', ' ')|title }}
+        </span>
+        {% if not loop.last %}<span class="text-muted">&rarr;</span>{% endif %}
+        {% endfor %}
+      </div>
+
+      <h6 class="mt-4">Status history</h6>
+      {% with history = status_history %}{% include "components/workflow_timeline.html" %}{% endwith %}
+    </div>
+  </div>
+{% else %}
+  {# List of all workflows #}
+  <div class="list-group">
+    {% for item in workflows %}
+    <a href="/workflow/{{ item.id }}" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+      <span>{{ item.job.title }} <span class="text-muted">at {{ item.job.employer.name }}</span></span>
+      {% with status = item.status %}{% include "components/status_badge.html" %}{% endwith %}
+    </a>
+    {% else %}
+    <p class="text-muted">No workflows started yet — a workflow begins once a job is matched.</p>
+    {% endfor %}
+  </div>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,10 @@
+{# Expects `label`, `value`, and optionally `color` (a Bootstrap color name,
+   defaults to "primary") in context. #}
+<div class="col">
+  <div class="card statistics-card shadow-sm border-0 border-start border-4 border-{{ color|default('primary') }}">
+    <div class="card-body">
+      <div class="text-muted small">{{ label }}</div>
+      <div class="fs-3 fw-semibold">{{ value }}</div>
+    </div>
+  </div>
+</div>

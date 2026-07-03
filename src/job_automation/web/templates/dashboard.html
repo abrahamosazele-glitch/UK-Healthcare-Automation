@@ -1,0 +1,279 @@
+{% extends "base.html" %}
+{% block title %}Dashboard{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Dashboard</h1>
+
+<div class="card shadow-sm mb-4 border-{{ 'success' if ai_status.configured else 'secondary' }}">
+  <div class="card-body d-flex justify-content-between align-items-center flex-wrap gap-2">
+    <div>
+      <h5 class="card-title mb-1">
+        AI status
+        {% if ai_status.configured %}
+        <span class="badge bg-success-subtle text-success-emphasis">Connected</span>
+        {% else %}
+        <span class="badge bg-secondary-subtle text-secondary-emphasis">Not configured</span>
+        {% endif %}
+      </h5>
+      {% if ai_status.configured %}
+      <p class="text-muted small mb-0">Model: {{ ai_status.model }} &middot; {{ ai_status.matches_with_ai }} of {{ ai_status.matches_total }} job matches used real AI ({{ ai_status.ai_coverage_percent }}%)</p>
+      {% else %}
+      <p class="text-muted small mb-0">No ANTHROPIC_API_KEY set — AI features (document generation, job match explanations, interview prep, skills-gap analysis) are unavailable until one is configured in .env. See docs/ANTHROPIC_INTEGRATION.md.</p>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+<h2 class="h5 mb-3">Job ingestion</h2>
+<div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+  {% with label="Jobs discovered", value=job_ingestion_summary.jobs_discovered, color="primary" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Jobs today", value=job_ingestion_summary.jobs_today, color="info" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Jobs this week", value=job_ingestion_summary.jobs_this_week, color="info" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Sources active", value=job_ingestion_summary.jobs_by_source|length, color="secondary" %}{% include "components/statistics_card.html" %}{% endwith %}
+</div>
+<div class="row g-4 mb-4">
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-header">Jobs by source</div>
+      <ul class="list-group list-group-flush">
+        {% for source in job_ingestion_summary.jobs_by_source %}
+        <li class="list-group-item d-flex justify-content-between">
+          <span>{{ source.name.replace('_', ' ')|title }}</span>
+          <span class="badge bg-primary-subtle text-primary-emphasis">{{ source.count }}</span>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">No jobs imported yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-header">Top employers (by job volume)</div>
+      <ul class="list-group list-group-flush">
+        {% for employer in job_ingestion_summary.top_employers_by_volume %}
+        <li class="list-group-item d-flex justify-content-between">
+          <span>{{ employer.name }}</span>
+          <span class="badge bg-primary-subtle text-primary-emphasis">{{ employer.count }}</span>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">No jobs imported yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-header">Latest jobs</div>
+      <ul class="list-group list-group-flush">
+        {% for job in job_ingestion_summary.latest_jobs %}
+        <li class="list-group-item">
+          <a href="/jobs/{{ job.job_id }}" class="text-decoration-none">
+            <div class="d-flex justify-content-between align-items-center">
+              <strong>{{ job.title }}</strong>
+              <span class="badge bg-secondary-subtle text-secondary-emphasis">{{ job.source.replace('_', ' ')|title }}</span>
+            </div>
+            <div class="text-muted small">{{ job.employer_name }} &middot; {{ job.discovered_at.strftime('%Y-%m-%d %H:%M') }}</div>
+          </a>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">No jobs imported yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+  {% with label="Jobs discovered", value=summary.jobs_discovered, color="primary" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Jobs matched", value=summary.jobs_matched, color="info" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Applications", value=summary.applications, color="primary" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Pending review", value=summary.pending_review, color="warning" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Approved documents", value=summary.approved_documents, color="success" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Rejected documents", value=summary.rejected_documents, color="danger" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Interview invitations", value=summary.interview_invitations, color="info" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Offers", value=summary.offers, color="success" %}{% include "components/statistics_card.html" %}{% endwith %}
+</div>
+
+<h2 class="h5 mb-3">Job organization</h2>
+<div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+  {% with label="Jobs saved", value=job_org_summary.jobs_saved, color="secondary" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Applications", value=job_org_summary.applications, color="primary" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Interviews", value=job_org_summary.interviews, color="info" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Offers", value=job_org_summary.offers, color="success" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Rejected", value=job_org_summary.rejected, color="danger" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Favourited", value=job_org_summary.jobs_favourited, color="warning" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Upcoming deadlines", value=job_org_summary.upcoming_deadlines, color="warning" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Upcoming reminders", value=job_org_summary.upcoming_reminders, color="info" %}{% include "components/statistics_card.html" %}{% endwith %}
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header">Pipeline stages</div>
+      <div class="card-body"><canvas id="pipeline-stage-chart"></canvas></div>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header">Favourite employers</div>
+      <ul class="list-group list-group-flush">
+        {% for employer in job_org_summary.favourite_employers %}
+        <li class="list-group-item d-flex justify-content-between">
+          <span>{{ employer.name }}</span>
+          <span class="badge bg-warning-subtle text-warning-emphasis">{{ employer.count }}</span>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">No favourite employers yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<h2 class="h5 mb-3">Employer CRM</h2>
+<div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+  {% with label="Employers tracked", value=employers_tracked_count, color="secondary" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Favourite employers", value=favourite_employer_count, color="warning" %}{% include "components/statistics_card.html" %}{% endwith %}
+</div>
+<div class="card shadow-sm mb-4">
+  <div class="card-header">Top employers by applications sent</div>
+  <div class="table-responsive">
+    <table class="table table-sm mb-0">
+      <thead>
+        <tr>
+          <th>Employer</th>
+          <th class="text-end">Applications</th>
+          <th class="text-end">Interviews</th>
+          <th class="text-end">Offers</th>
+          <th class="text-end">Rejections</th>
+          <th class="text-end">Interview rate</th>
+          <th class="text-end">Offer rate</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for employer in employer_summaries %}
+        <tr>
+          <td><a href="/employers/{{ employer.employer_id }}">{{ employer.employer_name }}</a></td>
+          <td class="text-end">{{ employer.applications_sent }}</td>
+          <td class="text-end">{{ employer.interviews }}</td>
+          <td class="text-end">{{ employer.offers }}</td>
+          <td class="text-end">{{ employer.rejections }}</td>
+          <td class="text-end">{{ employer.interview_rate }}%</td>
+          <td class="text-end">{{ employer.offer_rate }}%</td>
+        </tr>
+        {% else %}
+        <tr><td colspan="7" class="text-muted text-center">No employer outcomes recorded yet.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<h2 class="h5 mb-3">Interviews</h2>
+<div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+  {% with label="Interviews this week", value=interviews_this_week, color="primary" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Next interview in", value=(next_interview_countdown or "None scheduled"), color="info" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Preparation completion", value=interview_prep_completion ~ "%", color="warning" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Offer conversion rate", value=interview_analytics.offer_conversion_rate ~ "%", color="success" %}{% include "components/statistics_card.html" %}{% endwith %}
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header">Upcoming interviews</div>
+      <ul class="list-group list-group-flush">
+        {% for interview in upcoming_interviews %}
+        <li class="list-group-item">
+          <a href="/interviews/{{ interview.id }}" class="text-decoration-none">
+            <div class="d-flex justify-content-between align-items-center">
+              <strong>{{ interview.employer.name if interview.employer else 'Unknown employer' }}</strong>
+              {% with status = interview.status %}{% include "components/status_badge.html" %}{% endwith %}
+            </div>
+            <div class="text-muted small">{{ interview.scheduled_at.strftime('%Y-%m-%d %H:%M') }} &middot; {{ interview.interview_type.replace('_', ' ')|title }}</div>
+          </a>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">No upcoming interviews. <a href="/interviews/new">Schedule one</a>.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm">
+      <div class="card-header">Recent interview outcomes</div>
+      <ul class="list-group list-group-flush">
+        {% for interview in recent_interview_outcomes %}
+        <li class="list-group-item">
+          <a href="/interviews/{{ interview.id }}" class="text-decoration-none">
+            <div class="d-flex justify-content-between align-items-center">
+              <strong>{{ interview.employer.name if interview.employer else 'Unknown employer' }}</strong>
+              {% with status = interview.status %}{% include "components/status_badge.html" %}{% endwith %}
+            </div>
+            <div class="text-muted small">{{ interview.scheduled_at.strftime('%Y-%m-%d') }}</div>
+          </a>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">No completed interviews yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-header">Recent activity</div>
+      <ul class="list-group list-group-flush">
+        {% for item in recent_activity %}
+        <li class="list-group-item">
+          <div class="d-flex justify-content-between">
+            <span>
+              <strong>{{ item.action.replace('_', ' ')|title }}</strong>
+              {% if item.job_title %} &mdash; {{ item.job_title }} at {{ item.employer_name }}{% endif %}
+            </span>
+            <span class="text-muted small">{{ item.occurred_at.strftime('%Y-%m-%d %H:%M') }}</span>
+          </div>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">No activity yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-header">Upcoming deadlines</div>
+      <ul class="list-group list-group-flush">
+        {% for deadline in upcoming_deadlines %}
+        <li class="list-group-item">
+          <div class="d-flex justify-content-between">
+            <a href="/jobs/{{ deadline.job_id }}">{{ deadline.job_title }}</a>
+            <span class="badge bg-warning-subtle text-warning-emphasis">{{ deadline.closing_date.isoformat() }}</span>
+          </div>
+          <div class="text-muted small">{{ deadline.employer_name }}</div>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">No upcoming closing dates.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+  <div class="col-md-4">
+    <div class="card shadow-sm">
+      <div class="card-header">Job pipeline activity</div>
+      <ul class="list-group list-group-flush">
+        {% for notification in recent_job_notifications %}
+        <li class="list-group-item">
+          <div>{{ notification.message }}</div>
+          <span class="text-muted small">{{ notification.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted">No pipeline or reminder activity yet.</li>
+        {% endfor %}
+      </ul>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/js/charts.js"></script>{% endblock %}

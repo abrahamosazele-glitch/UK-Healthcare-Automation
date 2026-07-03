@@ -1,0 +1,44 @@
+{# Expects `status` (a plain lowercase_with_underscores string, e.g. "needs_review")
+   in the including template's context. Used for WorkflowStatus, DocumentStatus,
+   TaskStatus, NotificationSeverity, PipelineStage, and (added for the Interview
+   & Calendar Management milestone) InterviewStatus values — all small lowercase
+   string enums with an overlapping vocabulary ("approved"/"rejected",
+   "success"/"failed"), so one mapping covers all. PipelineStage's/InterviewStatus's
+   "applied"/"interview"/"offer(_received)"/"rejected" intentionally reuse the
+   exact same colors already assigned to WorkflowStatus's identically-named
+   values below — same real-world meaning, same color, even though they're
+   deliberately different enums (see job_organization_models.py's/
+   interview_models.py's docstrings). #}
+{% set status_colors = {
+  'new_match': 'secondary',
+  'documents_generated': 'info',
+  'draft': 'secondary',
+  'needs_review': 'warning',
+  'approved': 'success',
+  'rejected': 'danger',
+  'ready_to_apply': 'primary',
+  'applied': 'primary',
+  'interview': 'info',
+  'offer': 'success',
+  'closed': 'dark',
+  'pending': 'secondary',
+  'running': 'info',
+  'success': 'success',
+  'sent': 'success',
+  'failed': 'danger',
+  'skipped': 'warning',
+  'info': 'info',
+  'error': 'danger',
+  'new': 'secondary',
+  'interested': 'primary',
+  'documents_ready': 'info',
+  'scheduled': 'primary',
+  'upcoming': 'info',
+  'completed': 'success',
+  'cancelled': 'secondary',
+  'rescheduled': 'warning',
+  'missed': 'danger',
+  'offer_received': 'success',
+  'waiting_decision': 'warning',
+} %}
+<span class="badge bg-{{ status_colors.get(status, 'secondary') }} status-badge">{{ status.replace('_', ' ')|title }}</span>

@@ -1,0 +1,268 @@
+{% extends "base.html" %}
+{% block title %}{{ job.title }}{% endblock %}
+{% block content %}
+<a href="/jobs" class="btn btn-sm btn-outline-secondary mb-3">&larr; Back to jobs</a>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <h1 class="h3">{{ job.title }}</h1>
+    <h5 class="text-muted">{{ job.employer.name }}</h5>
+    <p class="mb-2">
+      <span class="badge bg-light text-dark border me-2">Source: {{ job.source_site.replace('_', ' ')|title }}</span>
+      {% if job.location %}<span class="me-3">&#128205; {{ job.location }}</span>{% endif %}
+      {% if job.band %}<span class="badge bg-secondary me-2">{{ job.band }}</span>{% endif %}
+      {% if job.contract_type %}<span class="me-3">{{ job.contract_type }}</span>{% endif %}
+      {% if job.working_pattern %}<span class="me-3">{{ job.working_pattern }}</span>{% endif %}
+      {% if job.visa_sponsorship %}<span class="badge bg-info-subtle text-info-emphasis">Visa sponsorship</span>{% endif %}
+    </p>
+    {% if job.salary_min or job.salary_max %}
+    <p><strong>Salary:</strong> &#163;{{ "%.0f"|format(job.salary_min) if job.salary_min else "?" }}
+      - &#163;{{ "%.0f"|format(job.salary_max) if job.salary_max else "?" }} {{ job.salary_period or '' }}</p>
+    {% endif %}
+    {% if job.closing_date %}<p><strong>Closing date:</strong> {{ job.closing_date.isoformat() }}</p>{% endif %}
+    {% if job.posted_date %}<p class="text-muted small">Posted {{ job.posted_date.strftime('%Y-%m-%d') }} via {{ job.source_site }}</p>{% endif %}
+
+    {% if job.description %}
+    <h6 class="mt-4">Description</h6>
+    <p>{{ job.description }}</p>
+    {% endif %}
+
+    {% if job.requirements %}
+    <h6 class="mt-4">Requirements</h6>
+    <ul>{% for item in job.requirements %}<li>{{ item }}</li>{% endfor %}</ul>
+    {% endif %}
+
+    {% if job.benefits %}
+    <h6 class="mt-4">Benefits</h6>
+    <ul>{% for item in job.benefits %}<li>{{ item }}</li>{% endfor %}</ul>
+    {% endif %}
+
+    <a class="btn btn-sm btn-outline-primary mt-2" href="{{ job.url }}" target="_blank" rel="noopener">View original listing</a>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>Organization</span>
+    {% with status = saved_job.pipeline_stage if saved_job else "new" %}{% include "components/status_badge.html" %}{% endwith %}
+  </div>
+  <div class="card-body">
+    <div class="d-flex flex-wrap gap-2 mb-3">
+      <form method="post" action="/jobs/{{ job.id }}/flag">
+        {% if saved_job and saved_job.is_saved %}
+        <input type="hidden" name="action" value="unsave">
+        <button type="submit" class="btn btn-sm btn-secondary">Saved</button>
+        {% else %}
+        <input type="hidden" name="action" value="save">
+        <button type="submit" class="btn btn-sm btn-outline-secondary">Save</button>
+        {% endif %}
+      </form>
+      <form method="post" action="/jobs/{{ job.id }}/flag">
+        {% if saved_job and saved_job.is_favourite %}
+        <input type="hidden" name="action" value="unfavourite">
+        <button type="submit" class="btn btn-sm btn-warning">&#9733; Favourited</button>
+        {% else %}
+        <input type="hidden" name="action" value="favourite">
+        <button type="submit" class="btn btn-sm btn-outline-warning">&#9734; Favourite</button>
+        {% endif %}
+      </form>
+      <form method="post" action="/jobs/{{ job.id }}/flag">
+        {% if saved_job and saved_job.is_hidden %}
+        <input type="hidden" name="action" value="unhide">
+        <button type="submit" class="btn btn-sm btn-secondary">Unhide</button>
+        {% else %}
+        <input type="hidden" name="action" value="hide">
+        <button type="submit" class="btn btn-sm btn-outline-secondary">Hide</button>
+        {% endif %}
+      </form>
+      <form method="post" action="/jobs/{{ job.id }}/flag">
+        {% if saved_job and saved_job.is_archived %}
+        <input type="hidden" name="action" value="restore">
+        <button type="submit" class="btn btn-sm btn-outline-primary">Restore</button>
+        {% else %}
+        <input type="hidden" name="action" value="archive">
+        <button type="submit" class="btn btn-sm btn-outline-secondary">Archive</button>
+        {% endif %}
+      </form>
+    </div>
+
+    {% if next_stages %}
+    <div class="mb-3">
+      <span class="small text-muted me-2">Move to:</span>
+      {% for stage in next_stages %}
+      <form method="post" action="/jobs/{{ job.id }}/stage" class="d-inline">
+        <input type="hidden" name="target_stage" value="{{ stage.value }}">
+        <button type="submit" class="btn btn-sm {{ 'btn-outline-danger' if stage.value == 'rejected' else 'btn-outline-primary' }}">
+          {{ stage.value.replace('_', ' ')|title }}
+        </button>
+      </form>
+      {% endfor %}
+    </div>
+    {% else %}
+    <p class="small text-muted mb-3">This pipeline stage is final — no further moves available.</p>
+    {% endif %}
+
+    <form method="post" action="/jobs/{{ job.id }}/details" class="row g-2 mb-3">
+      <div class="col-md-12">
+        <label class="form-label small">Notes</label>
+        <textarea name="notes" class="form-control form-control-sm" rows="2">{{ saved_job.notes if saved_job else '' }}</textarea>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Rating (1-5)</label>
+        <select name="personal_rating" class="form-select form-select-sm">
+          <option value="">&mdash;</option>
+          {% for n in range(1, 6) %}
+          <option value="{{ n }}" {% if saved_job and saved_job.personal_rating == n %}selected{% endif %}>{{ n }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Priority</label>
+        <select name="priority" class="form-select form-select-sm">
+          <option value="">&mdash;</option>
+          {% for priority in job_priorities %}
+          <option value="{{ priority.value }}" {% if saved_job and saved_job.priority == priority.value %}selected{% endif %}>
+            {{ priority.value|title }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Deadline</label>
+        <input type="date" name="deadline" class="form-control form-control-sm"
+               value="{{ saved_job.deadline.isoformat() if saved_job and saved_job.deadline else '' }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Interview date</label>
+        <input type="datetime-local" name="interview_date" class="form-control form-control-sm"
+               value="{{ saved_job.interview_date.strftime('%Y-%m-%dT%H:%M') if saved_job and saved_job.interview_date else '' }}">
+      </div>
+      <div class="col-12">
+        <button type="submit" class="btn btn-sm btn-primary">Save tracking details</button>
+      </div>
+    </form>
+
+    <form method="post" action="/jobs/{{ job.id }}/tags" class="row g-2 mb-3">
+      <div class="col-md-9">
+        <label class="form-label small">Tags (comma-separated)</label>
+        <input type="text" name="tags" class="form-control form-control-sm"
+               value="{{ (saved_job.tags or [])|join(', ') if saved_job else '' }}">
+      </div>
+      <div class="col-md-3 d-flex align-items-end">
+        <button type="submit" class="btn btn-sm btn-outline-primary w-100">Save tags</button>
+      </div>
+    </form>
+
+    <h6 class="mt-4">Checklist</h6>
+    <ul class="list-group list-group-flush mb-2">
+      {% for item in (saved_job.checklist if saved_job else []) or [] %}
+      <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+        <span class="{{ 'text-decoration-line-through text-muted' if item.done else '' }}">{{ item.label }}</span>
+        <span class="d-flex gap-2">
+          <form method="post" action="/jobs/{{ job.id }}/checklist/{{ loop.index0 }}/toggle">
+            <button type="submit" class="btn btn-sm btn-outline-secondary">{{ 'Undo' if item.done else 'Done' }}</button>
+          </form>
+          <form method="post" action="/jobs/{{ job.id }}/checklist/{{ loop.index0 }}/remove">
+            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+          </form>
+        </span>
+      </li>
+      {% else %}
+      <li class="list-group-item px-0 text-muted small">No checklist items yet.</li>
+      {% endfor %}
+    </ul>
+    <form method="post" action="/jobs/{{ job.id }}/checklist" class="row g-2">
+      <div class="col-md-9">
+        <input type="text" name="label" class="form-control form-control-sm" placeholder="e.g. Update CV" required>
+      </div>
+      <div class="col-md-3">
+        <button type="submit" class="btn btn-sm btn-outline-primary w-100">Add item</button>
+      </div>
+    </form>
+
+    <h6 class="mt-4">Reminders</h6>
+    <ul class="list-group list-group-flush mb-2">
+      {% for reminder in reminders %}
+      <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+        <span>
+          <strong>{{ reminder.reminder_type.replace('_', ' ')|title }}</strong>
+          &mdash; {{ reminder.remind_at.strftime('%Y-%m-%d %H:%M') }}
+          {% if reminder.message %}<span class="text-muted small">({{ reminder.message }})</span>{% endif %}
+          {% if reminder.is_sent %}<span class="badge bg-secondary ms-1">Sent</span>{% endif %}
+        </span>
+        <form method="post" action="/reminders/{{ reminder.id }}/delete">
+          <input type="hidden" name="job_id" value="{{ job.id }}">
+          <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+        </form>
+      </li>
+      {% else %}
+      <li class="list-group-item px-0 text-muted small">No reminders set.</li>
+      {% endfor %}
+    </ul>
+    <form method="post" action="/jobs/{{ job.id }}/reminders" class="row g-2">
+      <div class="col-md-3">
+        <select name="reminder_type" class="form-select form-select-sm">
+          {% for kind in reminder_types %}
+          <option value="{{ kind.value }}">{{ kind.value.replace('_', ' ')|title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <input type="datetime-local" name="remind_at" class="form-control form-control-sm" required>
+      </div>
+      <div class="col-md-3">
+        <input type="text" name="message" class="form-control form-control-sm" placeholder="Optional note">
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-sm btn-outline-primary w-100">Add reminder</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if match %}
+<h5 class="mb-2">AI match</h5>
+{% include "components/match_card.html" %}
+{% endif %}
+
+{% if career_insight %}
+<h5 class="mb-2">AI Career Assistant</h5>
+{% include "components/career_assistant_panel.html" %}
+{% endif %}
+
+<h5 class="mb-2">Generate a document</h5>
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <form method="post" action="/jobs/{{ job.id }}/documents/generate" class="row g-2 align-items-end">
+      <div class="col-md-4">
+        <label class="form-label small mb-1">Document type</label>
+        <select name="document_type" class="form-select form-select-sm" id="document-type-select" onchange="document.getElementById('application-answer-fields').style.display = this.value === 'application_answer' ? '' : 'none'">
+          <option value="supporting_statement">Supporting statement</option>
+          <option value="cover_letter">Cover letter</option>
+          <option value="application_answer">Application answer</option>
+          <option value="interview_prep">Interview prep</option>
+          <option value="skills_gap_analysis">Skills-gap analysis</option>
+          <option value="career_insight">Career insight (AI)</option>
+        </select>
+      </div>
+      <div class="col-md-6" id="application-answer-fields" style="display: none;">
+        <label class="form-label small mb-1">Question</label>
+        <input type="text" name="question" class="form-control form-control-sm" placeholder="Application question (required for application answer)">
+      </div>
+      <div class="col-md-2">
+        <button type="submit" class="btn btn-sm btn-primary w-100">Generate</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+{% if workflow %}
+<h5 class="mb-2">Application workflow</h5>
+<div class="card shadow-sm">
+  <div class="card-body">
+    <p>Status: {% with status = workflow.status %}{% include "components/status_badge.html" %}{% endwith %}</p>
+    <a href="/workflow/{{ workflow.id }}" class="btn btn-sm btn-outline-primary">View full timeline</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

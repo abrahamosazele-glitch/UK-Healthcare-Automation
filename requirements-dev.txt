@@ -1,0 +1,15 @@
+# Development/CI-only tooling — never installed in the production Docker
+# image (see Dockerfile, which only ever runs `pip install -r
+# requirements.txt`). Install with `pip install -r requirements-dev.txt`,
+# which also pulls in requirements.txt itself (below) so one command sets
+# up a full local dev environment.
+-r requirements.txt
+
+# --- Linting (job_automation.web) ---
+# Ruff's own default rule selection (see pyproject.toml's [tool.ruff]) —
+# fast enough to run on every commit/push without becoming the slow part
+# of CI.
+ruff>=0.6
+
+# --- Coverage reporting (see docs/CI_CD.md) ---
+pytest-cov>=5.0

@@ -1,0 +1,58 @@
+{# Expects `match` (a JobMatch ORM instance, `.job`/`.job.employer` loaded,
+   `.analysis` the JSON dict written by MatchResult.to_dict()) in context. #}
+{% set analysis = match.analysis or {} %}
+{% set score = match.match_score|float %}
+{% set score_color = 'success' if score >= 75 else ('warning' if score >= 50 else 'danger') %}
+<div class="card match-card mb-3 shadow-sm border-{{ score_color }}">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start mb-2">
+      <div>
+        <h5 class="card-title mb-1"><a href="/jobs/{{ match.job.id }}" class="text-decoration-none">{{ match.job.title }}</a></h5>
+        <h6 class="card-subtitle text-muted">{{ match.job.employer.name }}</h6>
+      </div>
+      <div class="text-center">
+        <div class="score-circle bg-{{ score_color }}-subtle text-{{ score_color }}-emphasis border border-{{ score_color }}">
+          {{ "%.0f"|format(score) }}
+        </div>
+        <div class="small text-muted">Overall score</div>
+      </div>
+    </div>
+
+    {% if analysis.confidence_score is defined %}
+    <p class="small text-muted mb-2">Confidence: {{ "%.0f"|format(analysis.confidence_score) }}%
+      {% if not analysis.used_llm %}<span class="badge bg-secondary-subtle text-secondary-emphasis">rule-based only</span>{% endif %}
+    </p>
+    {% endif %}
+
+    {% if not analysis.used_llm %}
+    <form method="post" action="/matches/{{ match.job.id }}/rematch" class="mb-2">
+      <button type="submit" class="btn btn-sm btn-outline-primary">Re-run with AI</button>
+    </form>
+    {% endif %}
+
+    {% if analysis.category_scores %}
+    <div class="row row-cols-2 row-cols-md-4 g-2 mb-3">
+      {% for category, value in analysis.category_scores.items() %}
+      <div class="col">
+        <div class="small text-muted">{{ category.replace('_', ' ')|title }}</div>
+        <div class="progress" style="height: 6px;">
+          <div class="progress-bar bg-{{ 'success' if value >= 75 else ('warning' if value >= 50 else 'danger') }}"
+               style="width: {{ value }}%"></div>
+        </div>
+        <div class="small">{{ "%.0f"|format(value) }}</div>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+    {% if analysis.strengths %}
+    <p class="mb-1"><strong>Strengths:</strong> {{ analysis.strengths|join('; ') }}</p>
+    {% endif %}
+    {% if analysis.weaknesses %}
+    <p class="mb-1"><strong>Weaknesses:</strong> {{ analysis.weaknesses|join('; ') }}</p>
+    {% endif %}
+    {% if analysis.recommended_actions %}
+    <p class="mb-0"><strong>Recommended:</strong> {{ analysis.recommended_actions|join('; ') }}</p>
+    {% endif %}
+  </div>
+</div>

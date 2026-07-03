@@ -1,0 +1,2 @@
+This is a placeholder CV file used only to verify that BaseApplication.upload_cv()
+can attach a real file to a file input control. It is not real candidate data.

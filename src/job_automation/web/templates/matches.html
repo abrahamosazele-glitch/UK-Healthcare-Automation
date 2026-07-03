@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block title %}AI Matches{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">AI Matches</h1>
+<p class="text-muted">{{ matches|length }} match(es), best score first.</p>
+{% for match in matches %}
+  {% include "components/match_card.html" %}
+{% else %}
+  <p class="text-muted">No matches yet. Matches are computed by the AI matching engine once jobs and a candidate profile exist.</p>
+{% endfor %}
+{% endblock %}

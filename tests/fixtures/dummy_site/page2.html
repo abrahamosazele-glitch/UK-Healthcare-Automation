@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head><title>Dummy Job Site - Page 2</title></head>
+<body>
+<h1>Search Results</h1>
+
+<div class="job-card" data-reference="REF-003">
+  <h2 class="job-title">Senior Care Worker</h2>
+  <span class="employer">Example Care Homes Ltd</span>
+  <span class="salary">GBP 12.75 per hour</span>
+  <span class="location">Birmingham</span>
+  <span class="contract">Permanent</span>
+  <span class="hours">Full time</span>
+  <span class="visa">No</span>
+  <span class="closing-date">2026-08-20</span>
+  <a class="job-link" href="job-ref-003.html">View job</a>
+  <p class="description">Lead a small team of care assistants across two floors.</p>
+  <ul class="requirements">
+    <li>NVQ Level 3</li>
+    <li>2 years supervisory experience</li>
+  </ul>
+</div>
+
+<!-- Intentionally malformed: no .job-title element, to prove BaseParser.parse_all()
+     skips and logs unparseable cards instead of aborting the whole page. -->
+<div class="job-card" data-reference="REF-004">
+  <span class="employer">Broken Listing Ltd</span>
+  <span class="location">Leeds</span>
+</div>
+
+<div class="job-card" data-reference="REF-005">
+  <h2 class="job-title">Healthcare Assistant - Nights</h2>
+  <span class="employer">Example NHS Trust</span>
+  <span class="salary">GBP 23,000 - 25,000 per year</span>
+  <span class="band">Band 2</span>
+  <span class="location">Bristol</span>
+  <span class="contract">Permanent</span>
+  <span class="hours">Night shifts</span>
+  <span class="visa">No</span>
+  <span class="closing-date">2026-08-10</span>
+  <a class="job-link" href="job-ref-005.html">View job</a>
+  <p class="description">Night shift healthcare assistant for a busy surgical ward.</p>
+  <ul class="requirements">
+    <li>Previous nightshift experience preferred</li>
+  </ul>
+</div>
+
+<a class="next-page" href="page3.html">Next</a>
+</body>
+</html>

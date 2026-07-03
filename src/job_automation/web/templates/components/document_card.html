@@ -1,0 +1,50 @@
+{# Expects `document` (a GeneratedDocumentRecord ORM instance) in context.
+   Every action button below is an explicit human click — nothing here ever
+   auto-approves a document; see docs/DASHBOARD.md's "Never auto-approve"
+   note. #}
+<div class="card document-card mb-3 shadow-sm" id="document-{{ document.id }}">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start mb-2">
+      <div>
+        <h6 class="card-title mb-1">{{ document.document_type.replace('_', ' ')|title }}</h6>
+        {% if document.question %}<p class="text-muted small mb-1">{{ document.question }}</p>{% endif %}
+        <p class="text-muted small mb-0">Generated {{ document.created_at.strftime('%Y-%m-%d %H:%M') }}</p>
+      </div>
+      <span id="document-status-{{ document.id }}">
+        {% with status = document.status %}{% include "components/status_badge.html" %}{% endwith %}
+      </span>
+    </div>
+
+    <p class="document-preview">{{ document.content[:220] }}{% if document.content|length > 220 %}&hellip;{% endif %}</p>
+
+    {% if document.validation_issues %}
+    <div class="alert alert-warning py-2 small mb-2">
+      <strong>Review flags:</strong>
+      <ul class="mb-0">
+        {% for issue in document.validation_issues %}
+        <li>({{ issue.severity }}) {{ issue.message }}</li>
+        {% endfor %}
+      </ul>
+    </div>
+    {% endif %}
+
+    <div class="btn-group btn-group-sm" role="group">
+      <a class="btn btn-outline-secondary" href="/documents/{{ document.id }}">Preview</a>
+      <button class="btn btn-outline-success"
+              hx-post="/api/documents/{{ document.id }}/approve"
+              hx-target="#document-status-{{ document.id }}"
+              hx-swap="innerHTML"
+              {% if document.status == 'approved' %}disabled{% endif %}>
+        Approve
+      </button>
+      <button class="btn btn-outline-danger"
+              hx-post="/api/documents/{{ document.id }}/reject"
+              hx-target="#document-status-{{ document.id }}"
+              hx-swap="innerHTML"
+              {% if document.status == 'rejected' %}disabled{% endif %}>
+        Reject
+      </button>
+      <a class="btn btn-outline-primary" href="/api/documents/{{ document.id }}/export?format=markdown">Export</a>
+    </div>
+  </div>
+</div>

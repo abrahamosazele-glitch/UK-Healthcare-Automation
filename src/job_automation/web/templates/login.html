@@ -1,0 +1,27 @@
+{% extends "auth_base.html" %}
+{% block title %}Log in{% endblock %}
+{% block content %}
+<div class="card shadow-sm">
+  <div class="card-body">
+    <h2 class="h5 mb-3">Log in</h2>
+    {% if error %}
+    <div class="alert alert-danger py-2">{{ error }}</div>
+    {% endif %}
+    <form method="post" action="/login">
+      <input type="hidden" name="next" value="{{ next or '' }}">
+      <div class="mb-3">
+        <label class="form-label small">Email</label>
+        <input type="email" name="email" class="form-control" required autofocus value="{{ email or '' }}">
+      </div>
+      <div class="mb-3">
+        <label class="form-label small">Password</label>
+        <input type="password" name="password" class="form-control" required>
+      </div>
+      <button type="submit" class="btn btn-primary w-100">Log in</button>
+    </form>
+    <p class="text-center text-muted small mt-3 mb-0">
+      Don't have an account? <a href="/register">Register</a>
+    </p>
+  </div>
+</div>
+{% endblock %}

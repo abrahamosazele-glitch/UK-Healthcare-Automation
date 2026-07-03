@@ -1,0 +1,116 @@
+{% extends "base.html" %}
+{% block title %}Notification Settings{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h1 class="h3 mb-0">Notification Settings</h1>
+  <div class="d-flex gap-2">
+    <a href="/notifications" class="btn btn-sm btn-outline-secondary">Back to notifications</a>
+    <a href="/notifications/history" class="btn btn-sm btn-outline-secondary">Email history</a>
+  </div>
+</div>
+
+<form method="post" action="/notifications/settings" class="card shadow-sm">
+  <div class="card-header">Email notifications</div>
+  <div class="card-body">
+    <p class="text-muted small">
+      Each toggle controls only the <strong>email</strong> for that event — the matching
+      in-app notification (bell icon, Notifications page) always appears regardless.
+    </p>
+    <div class="row g-2">
+      <div class="col-md-6">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="email_new_jobs_imported" value="true" id="emailNewJobs"
+                 {% if prefs.email_new_jobs_imported %}checked{% endif %}>
+          <label class="form-check-label" for="emailNewJobs">New jobs imported</label>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="email_high_match" value="true" id="emailHighMatch"
+                 {% if prefs.email_high_match %}checked{% endif %}>
+          <label class="form-check-label" for="emailHighMatch">High AI match</label>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="email_interview_reminders" value="true" id="emailInterviewReminders"
+                 {% if prefs.email_interview_reminders %}checked{% endif %}>
+          <label class="form-check-label" for="emailInterviewReminders">Interview reminders</label>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="email_closing_soon" value="true" id="emailClosingSoon"
+                 {% if prefs.email_closing_soon %}checked{% endif %}>
+          <label class="form-check-label" for="emailClosingSoon">Closing soon reminders</label>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="email_daily_digest" value="true" id="emailDailyDigest"
+                 {% if prefs.email_daily_digest %}checked{% endif %}>
+          <label class="form-check-label" for="emailDailyDigest">Daily job digest</label>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="email_weekly_summary" value="true" id="emailWeeklySummary"
+                 {% if prefs.email_weekly_summary %}checked{% endif %}>
+          <label class="form-check-label" for="emailWeeklySummary">Weekly summary</label>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="email_scheduler_status" value="true" id="emailSchedulerStatus"
+                 {% if prefs.email_scheduler_status %}checked{% endif %}>
+          <label class="form-check-label" for="emailSchedulerStatus">Scheduler success/failure</label>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="form-check">
+          <input class="form-check-input" type="checkbox" name="email_document_generated" value="true" id="emailDocumentGenerated"
+                 {% if prefs.email_document_generated %}checked{% endif %}>
+          <label class="form-check-label" for="emailDocumentGenerated">Document generation completed</label>
+        </div>
+      </div>
+    </div>
+
+    <hr>
+
+    <div class="row g-2">
+      <div class="col-md-3">
+        <label class="form-label small">Quiet hours start (UTC)</label>
+        <input type="number" min="0" max="23" name="quiet_hours_start" class="form-control"
+               value="{{ prefs.quiet_hours_start if prefs.quiet_hours_start is not none else '' }}" placeholder="e.g. 22">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Quiet hours end (UTC)</label>
+        <input type="number" min="0" max="23" name="quiet_hours_end" class="form-control"
+               value="{{ prefs.quiet_hours_end if prefs.quiet_hours_end is not none else '' }}" placeholder="e.g. 7">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">Daily digest hour (UTC)</label>
+        <input type="number" min="0" max="23" name="daily_digest_hour" class="form-control" value="{{ prefs.daily_digest_hour }}">
+      </div>
+      <div class="col-md-3">
+        <label class="form-label small">AI match threshold (%)</label>
+        <input type="number" min="0" max="100" step="0.1" name="ai_match_threshold" class="form-control" value="{{ prefs.ai_match_threshold }}">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label small">Preferred email address</label>
+        <input type="email" name="preferred_email" class="form-control" value="{{ prefs.preferred_email or '' }}"
+               placeholder="{{ current_user.email }} (default)">
+      </div>
+    </div>
+    <p class="text-muted small mt-2 mb-0">
+      Quiet hours suppress real-time emails (new job, high match, interview reminder, closing
+      soon, document generated, scheduler status) — the daily digest and weekly summary always
+      send at their own configured hour regardless. Leave quiet hours blank to disable them.
+      The AI match threshold only raises the bar for the high-match <em>email</em> — the
+      notification itself already requires the account-wide threshold to fire at all.
+    </p>
+
+    <button type="submit" class="btn btn-primary btn-sm mt-3">Save notification settings</button>
+  </div>
+</form>
+{% endblock %}

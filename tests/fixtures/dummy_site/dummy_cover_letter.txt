@@ -1,0 +1,3 @@
+This is a placeholder cover letter file used only to verify that
+BaseApplication.upload_cover_letter() can attach a real file to a file input
+control. It is not real candidate data.

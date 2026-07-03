@@ -1,0 +1,55 @@
+{
+  "_comment": "Copy to candidate_profile_full.json and fill in real details. This is the rich schema consumed by job_automation.profile (Candidate Profile Intelligence) — a separate, richer schema from candidate_profile.example.json, which the AI matching engine still uses. See docs/CANDIDATE_PROFILE.md.",
+  "personal_information": {
+    "full_name": "",
+    "email": "",
+    "phone": "",
+    "address": "",
+    "personal_statement": ""
+  },
+  "education": [
+    {"qualification": "", "awarding_body": "", "year": "", "grade": ""}
+  ],
+  "employment_history": [
+    {
+      "job_title": "",
+      "employer": "",
+      "location": "",
+      "start_date": "",
+      "end_date": "",
+      "responsibilities": []
+    }
+  ],
+  "skills": [],
+  "certificates": [
+    {"name": "DBS Check", "issuing_body": "", "issued_date": "", "expiry_date": ""},
+    {"name": "Manual Handling", "issuing_body": "", "issued_date": "", "expiry_date": ""},
+    {"name": "Basic Life Support", "issuing_body": "", "issued_date": "", "expiry_date": ""}
+  ],
+  "professional_registrations": [
+    {"body": "", "registration_number": "", "expiry_date": "", "status": ""}
+  ],
+  "languages": [
+    {"language": "English", "proficiency": "native"}
+  ],
+  "visa_status": {
+    "right_to_work_uk": true,
+    "visa_type": null,
+    "sponsorship_required": false
+  },
+  "preferences": {
+    "preferred_locations": [],
+    "max_travel_distance_miles": null,
+    "preferred_employers": [],
+    "preferred_contract_type": null,
+    "preferred_hours": null,
+    "preferred_salary_min": null,
+    "preferred_nhs_band": null,
+    "preferred_working_pattern": null,
+    "remote_preference": null,
+    "visa_sponsorship_required": null
+  },
+  "career_goals": [],
+  "availability": null,
+  "keywords": []
+}

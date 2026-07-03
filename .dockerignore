@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.pyc
+.git/
+.pytest_cache/
+*.egg-info/
+
+# Local dev database, generated documents, browser artifacts, logs — a
+# container should start from an empty state and either use a fresh
+# SQLite file (mounted volume) or a real DATABASE_URL (Postgres).
+data/
+logs/
+
+.env
+tests/
+docs/

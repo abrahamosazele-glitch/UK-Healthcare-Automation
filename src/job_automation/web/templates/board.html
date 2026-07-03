@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+{% block title %}Board{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Job Board</h1>
+<p class="text-muted small mb-4">
+  Your personal Kanban pipeline. Move a job forward with the button on its card — see
+  <a href="/jobs?saved=true">Jobs</a> for the full saved list, or <a href="/jobs?archived=true">Jobs (Archived)</a> to restore an archived job.
+</p>
+
+<div class="d-flex gap-3 board-columns" style="overflow-x: auto;">
+  {% for column in board_columns %}
+  <div class="board-column flex-shrink-0" style="width: 300px;">
+    <div class="card shadow-sm h-100">
+      <div class="card-header d-flex justify-content-between align-items-center">
+        <span>{{ column.stage.value.replace('_', ' ')|title }}</span>
+        <span class="badge bg-secondary">{{ column.saved_jobs|length }}</span>
+      </div>
+      <div class="card-body p-2">
+        {% for saved_job in column.saved_jobs %}
+        <div class="card mb-2">
+          <div class="card-body p-2">
+            <a href="/jobs/{{ saved_job.job.id }}" class="text-decoration-none">
+              <div class="fw-semibold small">{{ saved_job.job.title }}</div>
+            </a>
+            <div class="text-muted small">{{ saved_job.job.employer.name }}</div>
+            {% if saved_job.deadline %}
+            <div class="small text-warning-emphasis">Deadline {{ saved_job.deadline.isoformat() }}</div>
+            {% endif %}
+            {% if saved_job.is_favourite %}<span class="badge bg-warning-subtle text-warning-emphasis">&#9733; Favourite</span>{% endif %}
+            {% if column.next_stages %}
+            <div class="d-flex flex-wrap gap-1 mt-2">
+              {% for stage in column.next_stages %}
+              <form method="post" action="/jobs/{{ saved_job.job.id }}/stage">
+                <input type="hidden" name="target_stage" value="{{ stage.value }}">
+                <input type="hidden" name="next" value="/board">
+                <button type="submit" class="btn btn-xs btn-sm {{ 'btn-outline-danger' if stage.value == 'rejected' else 'btn-outline-primary' }}">
+                  {{ stage.value.replace('_', ' ')|title }}
+                </button>
+              </form>
+              {% endfor %}
+            </div>
+            {% endif %}
+          </div>
+        </div>
+        {% else %}
+        <p class="text-muted small px-1">No jobs here.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

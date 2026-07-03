@@ -1,0 +1,237 @@
+{% extends "base.html" %}
+{% block title %}{{ employer.name }}{% endblock %}
+{% block content %}
+<a href="/employers" class="btn btn-sm btn-outline-secondary mb-3">&larr; Back to employers</a>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <h1 class="h3 mb-1">{{ employer.name }}</h1>
+        {% if employer.employer_type %}
+        <span class="badge bg-secondary">{{ employer.employer_type.replace('_', ' ')|title }}</span>
+        {% endif %}
+      </div>
+      <form method="post" action="/employers/{{ employer.id }}/flag">
+        {% if profile and profile.is_favourite %}
+        <input type="hidden" name="action" value="unfavourite">
+        <button type="submit" class="btn btn-sm btn-warning">&#9733; Favourited</button>
+        {% else %}
+        <input type="hidden" name="action" value="favourite">
+        <button type="submit" class="btn btn-sm btn-outline-warning">&#9734; Favourite</button>
+        {% endif %}
+      </form>
+    </div>
+    <p class="mb-1 mt-2">
+      {% if employer.website %}<a href="{{ employer.website }}" target="_blank" rel="noopener" class="me-3">{{ employer.website }}</a>{% endif %}
+      {% if employer.email %}<span class="me-3">&#9993; {{ employer.email }}</span>{% endif %}
+      {% if employer.phone %}<span class="me-3">&#9742; {{ employer.phone }}</span>{% endif %}
+    </p>
+    {% if employer.address %}<p class="text-muted small mb-1">{{ employer.address }}</p>{% endif %}
+    {% if employer.description %}<p class="mb-0">{{ employer.description }}</p>{% endif %}
+  </div>
+</div>
+
+<div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+  {% with label="Applications sent", value=outcome.applications_sent, color="primary" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Interviews", value=outcome.interviews, color="info" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Offers", value=outcome.offers, color="success" %}{% include "components/statistics_card.html" %}{% endwith %}
+  {% with label="Rejections", value=outcome.rejections, color="danger" %}{% include "components/statistics_card.html" %}{% endwith %}
+</div>
+<p class="text-muted small mb-4">
+  Interview rate: <strong>{{ outcome.interview_rate }}%</strong>
+  &middot; Offer rate: <strong>{{ outcome.offer_rate }}%</strong>
+</p>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header d-flex justify-content-between align-items-center">
+    <span>Interview history</span>
+    <a href="/interviews/new?employer_id={{ employer.id }}" class="btn btn-sm btn-outline-primary">+ Schedule interview</a>
+  </div>
+  <div class="card-body">
+    <p class="text-muted small mb-3">
+      {{ interview_stats.total_interviews }} interview(s) total &middot;
+      {{ interview_stats.completed_interviews }} completed &middot;
+      {{ interview_stats.cancelled_interviews }} cancelled/missed &middot;
+      {{ interview_stats.offers }} offer(s)
+      {% if interview_stats.average_interviews_per_application is not none %}
+      &middot; average {{ interview_stats.average_interviews_per_application }} interview(s) per application
+      {% endif %}
+    </p>
+  </div>
+  <ul class="list-group list-group-flush">
+    {% for interview in interviews %}
+    <li class="list-group-item">
+      <a href="/interviews/{{ interview.id }}" class="text-decoration-none">
+        <div class="d-flex justify-content-between align-items-center">
+          <span>{{ interview.scheduled_at.strftime('%Y-%m-%d %H:%M') }} &mdash; {{ interview.interview_type.replace('_', ' ')|title }}</span>
+          {% with status = interview.status %}{% include "components/status_badge.html" %}{% endwith %}
+        </div>
+      </a>
+    </li>
+    {% else %}
+    <li class="list-group-item text-muted small">No interviews scheduled with this employer yet.</li>
+    {% endfor %}
+  </ul>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header">Visa sponsorship notes</div>
+  <div class="card-body">
+    <form method="post" action="/employers/{{ employer.id }}/visa-notes">
+      <textarea name="notes" class="form-control form-control-sm mb-2" rows="2"
+                placeholder="e.g. Historically sponsors Tier 2 visas for Band 5+ roles">{{ (profile.visa_sponsorship_notes if profile else none) or '' }}</textarea>
+      <button type="submit" class="btn btn-sm btn-outline-primary">Save notes</button>
+    </form>
+  </div>
+</div>
+
+<div class="row g-4 mb-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header">Departments &amp; locations</div>
+      <ul class="list-group list-group-flush">
+        {% for department in departments %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span>
+            <strong>{{ department.name }}</strong>
+            {% if department.location %}<span class="text-muted small"> &mdash; {{ department.location }}</span>{% endif %}
+          </span>
+          <form method="post" action="/employers/{{ employer.id }}/departments/{{ department.id }}/delete">
+            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+          </form>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted small">No departments recorded yet.</li>
+        {% endfor %}
+      </ul>
+      <div class="card-body">
+        <form method="post" action="/employers/{{ employer.id }}/departments" class="row g-2">
+          <div class="col-md-6">
+            <input type="text" name="name" class="form-control form-control-sm" placeholder="Department name" required>
+          </div>
+          <div class="col-md-4">
+            <input type="text" name="location" class="form-control form-control-sm" placeholder="Location">
+          </div>
+          <div class="col-md-2">
+            <button type="submit" class="btn btn-sm btn-outline-primary w-100">Add</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-6">
+    <div class="card shadow-sm h-100">
+      <div class="card-header">Recruiter contacts</div>
+      <ul class="list-group list-group-flush">
+        {% for contact in contacts %}
+        <li class="list-group-item d-flex justify-content-between align-items-center">
+          <span>
+            <strong>{{ contact.name }}</strong>
+            {% if contact.role %}<span class="text-muted small"> &mdash; {{ contact.role }}</span>{% endif %}
+            <br>
+            <span class="small text-muted">
+              {% if contact.email %}{{ contact.email }}{% endif %}
+              {% if contact.phone %} &middot; {{ contact.phone }}{% endif %}
+            </span>
+          </span>
+          <form method="post" action="/employers/{{ employer.id }}/contacts/{{ contact.id }}/delete">
+            <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+          </form>
+        </li>
+        {% else %}
+        <li class="list-group-item text-muted small">No contacts recorded yet.</li>
+        {% endfor %}
+      </ul>
+      <div class="card-body">
+        <form method="post" action="/employers/{{ employer.id }}/contacts" class="row g-2">
+          <div class="col-md-6">
+            <input type="text" name="name" class="form-control form-control-sm" placeholder="Contact name" required>
+          </div>
+          <div class="col-md-6">
+            <input type="text" name="role" class="form-control form-control-sm" placeholder="Role">
+          </div>
+          <div class="col-md-6">
+            <input type="email" name="email" class="form-control form-control-sm" placeholder="Email">
+          </div>
+          <div class="col-md-6">
+            <input type="text" name="phone" class="form-control form-control-sm" placeholder="Phone">
+          </div>
+          {% if departments %}
+          <div class="col-md-12">
+            <select name="department_id" class="form-select form-select-sm">
+              <option value="">No department</option>
+              {% for department in departments %}
+              <option value="{{ department.id }}">{{ department.name }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          {% endif %}
+          <div class="col-md-12">
+            <button type="submit" class="btn btn-sm btn-outline-primary w-100">Add contact</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="card shadow-sm mb-4">
+  <div class="card-header">Activity timeline</div>
+  <ul class="list-group list-group-flush">
+    {% for entry in activity %}
+    <li class="list-group-item">
+      <div class="d-flex justify-content-between align-items-start">
+        <div>
+          {% if entry.entry_type == 'communication' %}
+          <span class="badge bg-info-subtle text-info-emphasis">{{ entry.channel.replace('_', ' ')|title }}</span>
+          {% else %}
+          <span class="badge bg-secondary-subtle text-secondary-emphasis">Note</span>
+          {% endif %}
+          <span class="text-muted small ms-2">{{ entry.occurred_at.strftime('%Y-%m-%d %H:%M') }}</span>
+          <p class="mb-0 mt-1">{{ entry.body }}</p>
+        </div>
+        <form method="post" action="/employers/{{ employer.id }}/activity/{{ entry.id }}/delete">
+          <button type="submit" class="btn btn-sm btn-outline-danger">Delete</button>
+        </form>
+      </div>
+    </li>
+    {% else %}
+    <li class="list-group-item text-muted small">No notes or communications logged yet.</li>
+    {% endfor %}
+  </ul>
+  <div class="card-body">
+    <div class="row g-4">
+      <div class="col-md-6">
+        <h6 class="small text-muted">Add a note</h6>
+        <form method="post" action="/employers/{{ employer.id }}/notes">
+          <textarea name="body" class="form-control form-control-sm mb-2" rows="2" placeholder="Note" required></textarea>
+          <button type="submit" class="btn btn-sm btn-outline-primary">Add note</button>
+        </form>
+      </div>
+      <div class="col-md-6">
+        <h6 class="small text-muted">Log a communication</h6>
+        <form method="post" action="/employers/{{ employer.id }}/communications" class="row g-2">
+          <div class="col-md-6">
+            <select name="channel" class="form-select form-select-sm">
+              {% for channel in communication_channels %}
+              <option value="{{ channel.value }}">{{ channel.value.replace('_', ' ')|title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-md-6">
+            <input type="datetime-local" name="occurred_at" class="form-control form-control-sm">
+          </div>
+          <div class="col-md-12">
+            <textarea name="body" class="form-control form-control-sm" rows="2" placeholder="What was discussed" required></textarea>
+          </div>
+          <div class="col-md-12">
+            <button type="submit" class="btn btn-sm btn-outline-primary w-100">Log communication</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

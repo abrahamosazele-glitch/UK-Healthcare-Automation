@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Analytics{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Analytics</h1>
+<p class="text-muted small">Chart data is loaded from <code>GET /api/dashboard/analytics</code>, which calls the same <code>AnalyticsService</code> the dashboard home page uses.</p>
+
+<div class="row row-cols-2 row-cols-md-4 g-3 mb-4">
+  <div class="col">
+    <div class="card shadow-sm"><div class="card-body"><div class="text-muted small">Interview rate</div><div class="fs-3 fw-semibold" id="interview-rate-value">&hellip;</div></div></div>
+  </div>
+  <div class="col">
+    <div class="card shadow-sm"><div class="card-body"><div class="text-muted small">Offer rate</div><div class="fs-3 fw-semibold" id="offer-rate-value">&hellip;</div></div></div>
+  </div>
+  <div class="col">
+    <div class="card shadow-sm"><div class="card-body"><div class="text-muted small">Document approval rate</div><div class="fs-3 fw-semibold" id="approval-rate-value">&hellip;</div></div></div>
+  </div>
+  <div class="col">
+    <div class="card shadow-sm"><div class="card-body"><div class="text-muted small">Document rejection rate</div><div class="fs-3 fw-semibold" id="rejection-rate-value">&hellip;</div></div></div>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm"><div class="card-header">Applications per month</div>
+      <div class="card-body"><canvas id="applications-per-month-chart"></canvas></div></div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm"><div class="card-header">Match score distribution</div>
+      <div class="card-body"><canvas id="match-score-distribution-chart"></canvas></div></div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm"><div class="card-header">Documents generated per month</div>
+      <div class="card-body"><canvas id="documents-per-month-chart"></canvas></div></div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm"><div class="card-header">Top employers (by matches)</div>
+      <div class="card-body"><canvas id="top-employers-chart"></canvas></div></div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm"><div class="card-header">Most-requested skills</div>
+      <div class="card-body"><canvas id="top-skills-chart"></canvas></div></div>
+  </div>
+</div>
+
+<h2 class="h5 mb-3 mt-4">Job market</h2>
+<p class="text-muted small">Loaded from <code>GET /api/dashboard/job-market-analytics</code> — account-wide facts about every job imported, not any one candidate's applications.</p>
+<div class="row g-4">
+  <div class="col-md-6">
+    <div class="card shadow-sm"><div class="card-header">Jobs by band</div>
+      <div class="card-body"><canvas id="jobs-by-band-chart"></canvas></div></div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm"><div class="card-header">Jobs by trust / employer</div>
+      <div class="card-body"><canvas id="jobs-by-employer-chart"></canvas></div></div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm"><div class="card-header">Jobs by location</div>
+      <div class="card-body"><canvas id="jobs-by-location-chart"></canvas></div></div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm"><div class="card-header">Jobs by salary band</div>
+      <div class="card-body"><canvas id="jobs-by-salary-chart"></canvas></div></div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm"><div class="card-header">Jobs by source</div>
+      <div class="card-body"><canvas id="jobs-by-source-chart"></canvas></div></div>
+  </div>
+  <div class="col-md-6">
+    <div class="card shadow-sm"><div class="card-header">Jobs discovered over time</div>
+      <div class="card-body"><canvas id="jobs-over-time-chart"></canvas></div></div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}<script src="/js/charts.js"></script>{% endblock %}

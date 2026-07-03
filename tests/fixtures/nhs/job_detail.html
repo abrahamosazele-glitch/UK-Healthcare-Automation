@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>NHS Jobs (fixture) - Job advert</title></head>
+<body>
+<h1>Job advert</h1>
+
+<!--
+  One shared fixture stands in for "a job's own advert page" for every
+  listing in this test suite — realistic NHS adverts each have their own
+  URL and content, but a single representative detail page is sufficient
+  to verify NHSParser.parse_detail() and NHSScraper's
+  navigate-to-detail/go-back flow without maintaining one fixture file per
+  listing.
+-->
+
+<div class="job-detail__description">
+  We are looking for a compassionate, dedicated professional to join our team.
+  You will work as part of a multidisciplinary team providing high quality
+  care to patients, supporting them and their families throughout their
+  treatment. This is a fantastic opportunity for someone looking to develop
+  their career within a supportive and forward-thinking NHS organisation.
+</div>
+
+<h2>Requirements</h2>
+<ul class="job-detail__requirements">
+  <li>NMC registration (where applicable to role)</li>
+  <li>Enhanced DBS check</li>
+  <li>Evidence of continuing professional development</li>
+</ul>
+
+<h2>Benefits</h2>
+<ul class="job-detail__benefits">
+  <li>NHS Pension Scheme</li>
+  <li>27 days annual leave plus bank holidays, rising with service</li>
+  <li>Access to NHS discounts and Blue Light Card</li>
+</ul>
+
+<a class="job-detail__employer-website" href="https://www.example-trust.nhs.uk">Visit employer website</a>
+</body>
+</html>

@@ -1,0 +1,83 @@
+personal_information:
+  full_name: Jane Doe
+  email: jane.doe@example.com
+  phone: "07123456789"
+  address: London
+  personal_statement: Dedicated healthcare assistant with NHS ward experience.
+
+education:
+  - qualification: BTEC Level 3 Health and Social Care
+    awarding_body: City College
+    year: "2019"
+  - qualification: NVQ Level 2 in Care
+    year: "2017"
+
+employment_history:
+  - job_title: Healthcare Assistant
+    employer: Example NHS Foundation Trust
+    location: London
+    start_date: "2022-01-01"
+    responsibilities:
+      - Provided patient care on a busy ward
+      - Assisted with moving and handling
+  - job_title: Support Worker
+    employer: Example Care Homes Ltd
+    location: Manchester
+    start_date: "2019-06-01"
+    end_date: "2021-12-31"
+    responsibilities:
+      - Delivered personal care to residents with dementia
+
+skills:
+  - communication
+  - patient_care
+  - moving_and_handling
+
+certificates:
+  - name: DBS Check
+    issued_date: "2023-01-01"
+    expiry_date: "2026-01-01"
+  - name: Manual Handling
+    issued_date: "2023-03-01"
+
+professional_registrations:
+  - body: NMC
+    registration_number: 12A1234B
+    expiry_date: "2027-01-01"
+    status: active
+
+languages:
+  - language: English
+    proficiency: native
+  - language: Polish
+    proficiency: fluent
+
+visa_status:
+  right_to_work_uk: true
+  sponsorship_required: false
+
+preferences:
+  preferred_locations:
+    - London
+    - Manchester
+  max_travel_distance_miles: 15
+  preferred_employers:
+    - Example NHS Foundation Trust
+  preferred_contract_type: Permanent
+  preferred_hours: Full-time
+  preferred_salary_min: 25000
+  preferred_nhs_band: Band 5
+  preferred_working_pattern: Full-time
+  remote_preference: on-site
+  visa_sponsorship_required: false
+
+career_goals:
+  - Progress to a senior healthcare assistant role
+  - Complete NVQ Level 3
+
+availability: 4 weeks notice
+
+keywords:
+  - ward
+  - nursing
+  - dementia care

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block title %}Applications{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Applications</h1>
+<p class="text-muted small">
+  An "application" here is a workflow that has reached at least
+  <code>READY_TO_APPLY</code> — see the Workflow page for jobs still earlier
+  in the review process.
+</p>
+
+<div class="table-responsive">
+  <table class="table table-hover align-middle">
+    <thead>
+      <tr>
+        <th>Employer</th>
+        <th>Job</th>
+        <th>Status</th>
+        <th>Interview date</th>
+        <th>Offer</th>
+        <th>Interview</th>
+        <th>Notes</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for item in applications %}
+      <tr>
+        <td>{{ item.workflow.job.employer.name }}</td>
+        <td><a href="/jobs/{{ item.workflow.job.id }}">{{ item.workflow.job.title }}</a></td>
+        <td>{% with status = item.workflow.status %}{% include "components/status_badge.html" %}{% endwith %}</td>
+        <td>{{ item.interview_date.strftime('%Y-%m-%d') if item.interview_date else "-" }}</td>
+        <td>{{ "Yes" if item.has_offer else "-" }}</td>
+        <td>
+          {% if item.linked_interview %}
+          <a href="/interviews/{{ item.linked_interview.id }}" class="text-decoration-none">
+            {% with status = item.linked_interview.status %}{% include "components/status_badge.html" %}{% endwith %}
+          </a>
+          {% else %}
+          <a href="/interviews/new?application_workflow_id={{ item.workflow.id }}&employer_id={{ item.workflow.job.employer.id }}&job_id={{ item.workflow.job.id }}" class="btn btn-sm btn-outline-secondary">Schedule</a>
+          {% endif %}
+        </td>
+        <td class="text-muted small">{{ item.latest_note or "-" }}</td>
+        <td><a href="/workflow/{{ item.workflow.id }}" class="btn btn-sm btn-outline-primary">Timeline</a></td>
+      </tr>
+      {% else %}
+      <tr><td colspan="8" class="text-muted">No applications yet.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+{% endblock %}

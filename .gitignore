@@ -1,0 +1,62 @@
+# Environments
+.venv/
+venv/
+.env
+
+# Python
+__pycache__/
+*.pyc
+*.egg-info/
+build/
+dist/
+
+# Database — the trailing `*` also catches manual backups like
+# `jobs.db.backup-before-cleanup` (a plain `*.db` only matches a filename
+# ending exactly in `.db`, missing anything appended after it).
+*.db*
+*.sqlite3*
+
+# The real candidate profile (personal CV/employment data) — the
+# `.example.json` templates alongside it are intentionally still tracked.
+data/candidate_profile.json
+
+# Generated documents (contain personal CV data — don't commit)
+data/cvs/*
+!data/cvs/.gitkeep
+data/cover_letters/*
+!data/cover_letters/.gitkeep
+data/reports/*
+!data/reports/.gitkeep
+data/raw/*
+!data/raw/.gitkeep
+
+# AI-drafted application documents (supporting statements, cover letters,
+# application answers exported by job_automation.documents.ExportManager —
+# personal draft content, never commit)
+data/documents/*
+!data/documents/.gitkeep
+
+# Browser automation artifacts (screenshots may contain page content,
+# sessions contain authentication cookies — never commit either)
+data/screenshots/*
+!data/screenshots/.gitkeep
+data/downloads/*
+!data/downloads/.gitkeep
+data/sessions/*
+!data/sessions/.gitkeep
+
+# AI matching engine cache (cached LLM analyses — regeneratable, not source)
+data/cache/*
+!data/cache/.gitkeep
+
+# Logs
+logs/*.log
+
+# IDE
+.vscode/
+.idea/
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/

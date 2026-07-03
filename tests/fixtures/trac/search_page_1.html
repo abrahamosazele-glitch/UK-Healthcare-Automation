@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>Trac Jobs (fixture) - Search Results - Page 1</title></head>
+<body>
+<h1>Vacancies</h1>
+<p class="trac-pagination__page-info">Page 1 of 2</p>
+
+<ul class="trac-vacancy-list">
+
+  <li class="trac-vacancy" data-vacancy-id="TRAC-0001">
+    <h2 class="trac-vacancy__title"><a href="vacancy_detail.html?ref=TRAC-0001">Staff Nurse - Emergency Department</a></h2>
+    <p class="trac-vacancy__employer">Example Foundation Trust</p>
+    <p class="trac-vacancy__location">Leeds</p>
+    <ul class="trac-vacancy__meta">
+      <li class="trac-vacancy__salary">£31,049 - £37,796 per annum</li>
+      <li class="trac-vacancy__band">Band 5</li>
+      <li class="trac-vacancy__contract">Permanent</li>
+      <li class="trac-vacancy__pattern">Full-time</li>
+    </ul>
+    <p class="trac-vacancy__closing-date">Closing date: 12 August 2026</p>
+    <p class="trac-vacancy__posted-date">Posted date: 1 July 2026</p>
+    <span class="trac-vacancy__reference">Reference: TRAC-0001</span>
+  </li>
+
+  <!-- Intentionally malformed: no .trac-vacancy__title element, to prove
+       TracParser/BaseParser.parse_all() skips and logs instead of aborting
+       the whole page. -->
+  <li class="trac-vacancy" data-vacancy-id="TRAC-0002">
+    <p class="trac-vacancy__employer">Broken Listing Trust</p>
+    <p class="trac-vacancy__location">Unknown</p>
+  </li>
+
+  <li class="trac-vacancy" data-vacancy-id="TRAC-0003">
+    <h2 class="trac-vacancy__title"><a href="vacancy_detail.html?ref=TRAC-0003">Domiciliary Care Assistant</a></h2>
+    <p class="trac-vacancy__employer">Example Community Trust</p>
+    <p class="trac-vacancy__location">Bradford</p>
+    <ul class="trac-vacancy__meta">
+      <li class="trac-vacancy__salary">£22,383 per annum</li>
+      <li class="trac-vacancy__band">Band 3</li>
+      <li class="trac-vacancy__contract">Fixed term: 12 months</li>
+      <li class="trac-vacancy__pattern">Part-time</li>
+    </ul>
+    <p class="trac-vacancy__closing-date">Closing date: 22 August 2026</p>
+    <p class="trac-vacancy__posted-date">Posted date: 2 July 2026</p>
+    <span class="trac-vacancy__reference">Reference: TRAC-0003</span>
+  </li>
+
+</ul>
+
+<a class="trac-pagination__next" href="search_page_2.html">Next page</a>
+</body>
+</html>

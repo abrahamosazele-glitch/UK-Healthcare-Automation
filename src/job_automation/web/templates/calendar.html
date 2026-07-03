@@ -1,0 +1,90 @@
+{% extends "base.html" %}
+{% block title %}Calendar{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+  <h1 class="h3 mb-0">Calendar</h1>
+  <div class="btn-group btn-group-sm" role="group">
+    <a href="/calendar?view=month&date_str={{ anchor.isoformat() }}" class="btn {{ 'btn-primary' if view == 'month' else 'btn-outline-primary' }}">Month</a>
+    <a href="/calendar?view=week&date_str={{ anchor.isoformat() }}" class="btn {{ 'btn-primary' if view == 'week' else 'btn-outline-primary' }}">Week</a>
+    <a href="/calendar?view=day&date_str={{ anchor.isoformat() }}" class="btn {{ 'btn-primary' if view == 'day' else 'btn-outline-primary' }}">Day</a>
+  </div>
+</div>
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <a href="/calendar?view={{ view }}&date_str={{ prev_date }}" class="btn btn-sm btn-outline-secondary">&larr; Previous</a>
+  <span class="fw-semibold">{{ start_day.strftime('%Y-%m-%d') }} &ndash; {{ end_day.strftime('%Y-%m-%d') }}</span>
+  <a href="/calendar?view={{ view }}&date_str={{ next_date }}" class="btn btn-sm btn-outline-secondary">Next &rarr;</a>
+</div>
+
+{% if view == 'month' %}
+<div class="table-responsive">
+  <table class="table table-bordered calendar-month-table">
+    <thead>
+      <tr>
+        <th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for week in weeks %}
+      <tr>
+        {% for day in week %}
+        <td class="align-top {{ 'bg-primary-subtle' if day == today }}" style="min-height: 100px;">
+          {% if day %}
+          <div class="small text-muted">{{ day.day }}</div>
+          {% for interview in by_day.get(day, []) %}
+          <a href="/interviews/{{ interview.id }}" class="d-block text-decoration-none small mb-1">
+            {% with status = interview.status %}{% include "components/status_badge.html" %}{% endwith %}
+            {{ interview.scheduled_at.strftime('%H:%M') }} {{ interview.employer.name if interview.employer else '' }}
+          </a>
+          {% endfor %}
+          {% endif %}
+        </td>
+        {% endfor %}
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% elif view == 'week' %}
+<div class="row row-cols-1 row-cols-md-7 g-2">
+  {% for day in days_in_range %}
+  <div class="col">
+    <div class="card h-100 {{ 'border-primary' if day == today }}">
+      <div class="card-header small">{{ day.strftime('%a %Y-%m-%d') }}</div>
+      <div class="card-body p-2">
+        {% for interview in by_day.get(day, []) %}
+        <a href="/interviews/{{ interview.id }}" class="d-block text-decoration-none small mb-2">
+          {% with status = interview.status %}{% include "components/status_badge.html" %}{% endwith %}
+          <div>{{ interview.scheduled_at.strftime('%H:%M') }} &mdash; {{ interview.employer.name if interview.employer else '' }}</div>
+        </a>
+        {% else %}
+        <p class="text-muted small mb-0">No interviews.</p>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="card shadow-sm">
+  <div class="card-header">{{ start_day.strftime('%A, %Y-%m-%d') }}</div>
+  <ul class="list-group list-group-flush">
+    {% for interview in by_day.get(start_day, []) %}
+    <li class="list-group-item">
+      <a href="/interviews/{{ interview.id }}" class="text-decoration-none">
+        <div class="d-flex justify-content-between align-items-center">
+          <strong>{{ interview.scheduled_at.strftime('%H:%M') }} &mdash; {{ interview.employer.name if interview.employer else '' }}</strong>
+          {% with status = interview.status %}{% include "components/status_badge.html" %}{% endwith %}
+        </div>
+        <div class="text-muted small">{{ interview.interview_type.replace('_', ' ')|title }}{% if interview.location %} &middot; {{ interview.location }}{% endif %}</div>
+      </a>
+    </li>
+    {% else %}
+    <li class="list-group-item text-muted">No interviews scheduled for this day.</li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}
+{% endblock %}

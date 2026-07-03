@@ -1,0 +1,57 @@
+# Install this project itself in editable mode, so `import job_automation`
+# works from scripts, Alembic's env.py, and tests without extra sys.path hacks.
+-e .
+
+# --- Browser automation (Playwright) ---
+# core/ browser framework built on this now; still no site-specific scraping.
+playwright>=1.42
+
+# --- Database ---
+SQLAlchemy>=2.0
+alembic>=1.13
+# Postgres driver for production (DATABASE_URL=postgresql://...). SQLite
+# (the dev/test default) needs no driver beyond the stdlib. See
+# docs/DEPLOYMENT.md for switching a deployment over to Postgres.
+psycopg2-binary>=2.9
+
+# --- Config / validation ---
+pydantic>=2.6
+pydantic-settings>=2.2
+python-dotenv>=1.0
+
+# --- Logging ---
+loguru>=0.7
+
+# --- AI (job_automation.ai — matching engine) ---
+anthropic>=0.34
+
+# --- Candidate profile intelligence (job_automation.profile) ---
+# YAML profile loading; PDF/DOCX profile loaders are interface-only this
+# milestone (see docs/CANDIDATE_PROFILE.md) so no pdf/docx library is added yet.
+PyYAML>=6.0
+
+# --- Web dashboard (job_automation.web) ---
+fastapi>=0.110
+uvicorn[standard]>=0.29
+Jinja2>=3.1
+python-multipart>=0.0.9
+
+# --- Authentication (job_automation.auth) ---
+# passlib's bcrypt backend probes `bcrypt.__about__.__version__`, which
+# bcrypt>=4.1 removed — pinned below 4.1 to avoid a spurious warning/failure.
+passlib[bcrypt]>=1.7
+bcrypt>=4.0,<4.1
+itsdangerous>=2.1
+
+# --- Background scheduler (job_automation.scheduler) ---
+# 3.x, not the still-evolving 4.x async-first line — this codebase is
+# synchronous throughout (SQLAlchemy sessions, Playwright sync API).
+APScheduler>=3.10,<4.0
+
+# --- Testing ---
+pytest>=8.0
+httpx>=0.27
+
+# NOTE: scraping (requests/bs4), CV/cover-letter .docx generation,
+# scheduling (APScheduler), and pandas-based reporting are still added to
+# this file only when those specific modules are built.

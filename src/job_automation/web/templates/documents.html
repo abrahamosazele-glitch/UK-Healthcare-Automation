@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% block title %}Documents{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Documents</h1>
+
+<ul class="nav nav-tabs mb-3">
+  {% for value, label in [(None, 'All'), ('draft', 'Draft'), ('needs_review', 'Needs Review'), ('approved', 'Approved'), ('rejected', 'Rejected')] %}
+  <li class="nav-item">
+    <a class="nav-link {% if status_filter == value %}active{% endif %}"
+       href="/documents{% if value %}?status={{ value }}{% endif %}">{{ label }}</a>
+  </li>
+  {% endfor %}
+</ul>
+
+{% for document in documents %}
+  {% include "components/document_card.html" %}
+{% else %}
+  <p class="text-muted">No documents{% if status_filter %} with status "{{ status_filter }}"{% endif %} yet.</p>
+{% endfor %}
+{% endblock %}

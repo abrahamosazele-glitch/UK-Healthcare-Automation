@@ -1,0 +1,128 @@
+{% extends "base.html" %}
+{% block title %}Jobs{% endblock %}
+{% block content %}
+<h1 class="h3 mb-4">Jobs</h1>
+
+<form id="job-filters" class="row g-2 mb-4 align-items-end"
+      hx-get="/jobs" hx-target="#jobs-results" hx-select="#jobs-results" hx-swap="outerHTML"
+      hx-push-url="true" hx-trigger="submit, change">
+  <div class="col-md-3">
+    <label class="form-label small">Search</label>
+    <input type="text" name="search" class="form-control form-control-sm" value="{{ filters.search or '' }}"
+           placeholder="Job title or description" hx-trigger="keyup changed delay:500ms">
+  </div>
+  <div class="col-md-2">
+    <label class="form-label small">Keywords</label>
+    <input type="text" name="keywords" class="form-control form-control-sm" value="{{ filters.keywords or '' }}"
+           hx-trigger="keyup changed delay:500ms">
+  </div>
+  <div class="col-md-2">
+    <label class="form-label small">Location</label>
+    <input type="text" name="location" class="form-control form-control-sm" value="{{ filters.location or '' }}">
+  </div>
+  <div class="col-md-2">
+    <label class="form-label small">Employer</label>
+    <input type="text" name="employer_name" class="form-control form-control-sm" value="{{ filters.employer_name or '' }}">
+  </div>
+  <div class="col-md-1">
+    <label class="form-label small">Band</label>
+    <input type="text" name="band" class="form-control form-control-sm" value="{{ filters.band or '' }}">
+  </div>
+  <div class="col-md-1">
+    <label class="form-label small">Min &#163;</label>
+    <input type="number" name="min_salary" class="form-control form-control-sm" value="{{ filters.min_salary or '' }}">
+  </div>
+  <div class="col-md-1">
+    <label class="form-label small">Max &#163;</label>
+    <input type="number" name="max_salary" class="form-control form-control-sm" value="{{ filters.max_salary or '' }}">
+  </div>
+  <div class="col-md-2">
+    <label class="form-label small">Employment type</label>
+    <input type="text" name="employment_type" class="form-control form-control-sm" value="{{ filters.employment_type or '' }}"
+           placeholder="e.g. Permanent">
+  </div>
+  <div class="col-md-2">
+    <label class="form-label small">Status</label>
+    <select name="pipeline_stage" class="form-select form-select-sm">
+      <option value="">Any</option>
+      {% for stage in pipeline_stages %}
+      <option value="{{ stage.value }}" {% if filters.pipeline_stage == stage.value %}selected{% endif %}>
+        {{ stage.value.replace('_', ' ')|title }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-2">
+    <label class="form-label small">Source</label>
+    <select name="source" class="form-select form-select-sm">
+      <option value="">Any</option>
+      {% for source_name in available_sources %}
+      <option value="{{ source_name }}" {% if filters.source == source_name %}selected{% endif %}>
+        {{ source_name.replace('_', ' ')|title }}
+      </option>
+      {% endfor %}
+    </select>
+  </div>
+  <div class="col-md-6 d-flex flex-wrap gap-3">
+    <div class="form-check mt-4">
+      <input class="form-check-input" type="checkbox" name="visa_sponsorship" value="true" id="visaCheck"
+             {% if filters.visa_sponsorship %}checked{% endif %}>
+      <label class="form-check-label small" for="visaCheck">Visa sponsorship</label>
+    </div>
+    <div class="form-check mt-4">
+      <input class="form-check-input" type="checkbox" name="remote" value="true" id="remoteCheck"
+             {% if filters.remote %}checked{% endif %}>
+      <label class="form-check-label small" for="remoteCheck">Remote</label>
+    </div>
+    <div class="form-check mt-4">
+      <input class="form-check-input" type="checkbox" name="closing_soon" value="true" id="closingSoonCheck"
+             {% if filters.closing_soon %}checked{% endif %}>
+      <label class="form-check-label small" for="closingSoonCheck">Closing soon</label>
+    </div>
+    <div class="form-check mt-4">
+      <input class="form-check-input" type="checkbox" name="expired" value="true" id="expiredCheck"
+             {% if filters.expired %}checked{% endif %}>
+      <label class="form-check-label small" for="expiredCheck">Expired</label>
+    </div>
+    <div class="form-check mt-4">
+      <input class="form-check-input" type="checkbox" name="saved" value="true" id="savedCheck"
+             {% if filters.saved_only %}checked{% endif %}>
+      <label class="form-check-label small" for="savedCheck">Saved</label>
+    </div>
+    <div class="form-check mt-4">
+      <input class="form-check-input" type="checkbox" name="favourite" value="true" id="favouriteCheck"
+             {% if filters.favourite_only %}checked{% endif %}>
+      <label class="form-check-label small" for="favouriteCheck">Favourite</label>
+    </div>
+    <div class="form-check mt-4">
+      <input class="form-check-input" type="checkbox" name="archived" value="true" id="archivedCheck"
+             {% if filters.archived_only %}checked{% endif %}>
+      <label class="form-check-label small" for="archivedCheck">Archived (restore view)</label>
+    </div>
+  </div>
+  <input type="hidden" name="sort_by" value="{{ filters.sort_by }}">
+  <input type="hidden" name="sort_descending" value="{{ filters.sort_descending|lower }}">
+  <div class="col-md-2">
+    <button type="submit" class="btn btn-primary btn-sm w-100">Filter</button>
+  </div>
+</form>
+
+<div id="jobs-results">
+  <p class="text-muted small">
+    {{ jobs|length }} job(s)
+    &middot; sorted by
+    <a href="#" onclick="sortJobsBy('posted_date'); return false;">newest</a> /
+    <a href="#" onclick="sortJobsBy('salary'); return false;">salary</a> /
+    <a href="#" onclick="sortJobsBy('closing_date'); return false;">deadline</a> /
+    <a href="#" onclick="sortJobsBy('employer'); return false;">employer A-Z</a> /
+    <a href="#" onclick="sortJobsBy('band'); return false;">band</a> /
+    <a href="#" onclick="sortJobsBy('title'); return false;">title</a>
+  </p>
+  {% for job in jobs %}
+    {% include "components/job_card.html" %}
+  {% else %}
+    <p class="text-muted">No jobs match these filters.</p>
+  {% endfor %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="/js/tables.js"></script>{% endblock %}

@@ -1,0 +1,73 @@
+{# Expects `job` (a Job ORM instance, with `.employer` loaded) in context, and
+   optionally `saved_states` (a job_id -> SavedJob map, see routes/jobs.py) —
+   falls back to "not tracked yet" when the including page doesn't pass one
+   (e.g. the AI Matches page's own card, which doesn't use this include). #}
+{% set saved_job = (saved_states or {}).get(job.id) %}
+<div class="card job-card mb-3 shadow-sm">
+  <div class="card-body">
+    <div class="d-flex justify-content-between align-items-start">
+      <div>
+        <h5 class="card-title mb-1"><a href="/jobs/{{ job.id }}" class="text-decoration-none">{{ job.title }}</a></h5>
+        <h6 class="card-subtitle text-muted mb-2">{{ job.employer.name }}</h6>
+      </div>
+      <div class="text-end">
+        <span class="badge bg-light text-dark border">{{ job.source_site.replace('_', ' ')|title }}</span>
+        {% if job.band %}<span class="badge bg-secondary">{{ job.band }}</span>{% endif %}
+        {% if saved_job %}
+        <div class="mt-1">{% with status = saved_job.pipeline_stage %}{% include "components/status_badge.html" %}{% endwith %}</div>
+        {% endif %}
+      </div>
+    </div>
+    <p class="mb-2">
+      {% if job.location %}<span class="me-3">&#128205; {{ job.location }}</span>{% endif %}
+      {% if job.salary_min or job.salary_max %}
+        <span class="me-3">&#163;{{ "%.0f"|format(job.salary_min) if job.salary_min else "?" }}
+          - &#163;{{ "%.0f"|format(job.salary_max) if job.salary_max else "?" }}
+          {% if job.salary_period %}{{ job.salary_period }}{% endif %}</span>
+      {% endif %}
+      {% if job.contract_type %}<span class="me-3">{{ job.contract_type }}</span>{% endif %}
+      {% if job.visa_sponsorship %}<span class="badge bg-info-subtle text-info-emphasis">Visa sponsorship</span>{% endif %}
+    </p>
+    {% if job.closing_date %}
+    <p class="text-muted small mb-0">Closes {{ job.closing_date.isoformat() }}</p>
+    {% endif %}
+
+    <div class="d-flex gap-2 mt-2">
+      <form method="post" action="/jobs/{{ job.id }}/flag">
+        <input type="hidden" name="next" value="/jobs">
+        {% if saved_job and saved_job.is_saved %}
+        <input type="hidden" name="action" value="unsave">
+        <button type="submit" class="btn btn-sm btn-secondary">Saved</button>
+        {% else %}
+        <input type="hidden" name="action" value="save">
+        <button type="submit" class="btn btn-sm btn-outline-secondary">Save</button>
+        {% endif %}
+      </form>
+      <form method="post" action="/jobs/{{ job.id }}/flag">
+        <input type="hidden" name="next" value="/jobs">
+        {% if saved_job and saved_job.is_favourite %}
+        <input type="hidden" name="action" value="unfavourite">
+        <button type="submit" class="btn btn-sm btn-warning">&#9733; Favourited</button>
+        {% else %}
+        <input type="hidden" name="action" value="favourite">
+        <button type="submit" class="btn btn-sm btn-outline-warning">&#9734; Favourite</button>
+        {% endif %}
+      </form>
+      <form method="post" action="/jobs/{{ job.id }}/flag">
+        <input type="hidden" name="next" value="/jobs">
+        <input type="hidden" name="action" value="hide">
+        <button type="submit" class="btn btn-sm btn-outline-secondary">Hide</button>
+      </form>
+      <form method="post" action="/jobs/{{ job.id }}/flag">
+        <input type="hidden" name="next" value="/jobs">
+        {% if saved_job and saved_job.is_archived %}
+        <input type="hidden" name="action" value="restore">
+        <button type="submit" class="btn btn-sm btn-outline-primary">Restore</button>
+        {% else %}
+        <input type="hidden" name="action" value="archive">
+        <button type="submit" class="btn btn-sm btn-outline-secondary">Archive</button>
+        {% endif %}
+      </form>
+    </div>
+  </div>
+</div>

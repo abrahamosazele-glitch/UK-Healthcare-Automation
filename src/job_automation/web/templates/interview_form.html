@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% block title %}Schedule Interview{% endblock %}
+{% block content %}
+<a href="/interviews" class="btn btn-sm btn-outline-secondary mb-3">&larr; Back to interviews</a>
+<h1 class="h3 mb-4">Schedule an interview</h1>
+
+<div class="card shadow-sm">
+  <div class="card-body">
+    <form method="post" action="/interviews/new" class="row g-3">
+      <div class="col-md-6">
+        <label class="form-label small">Employer</label>
+        <select name="employer_id" class="form-select form-select-sm" required>
+          <option value="">Select an employer</option>
+          {% for employer in employers %}
+          <option value="{{ employer.id }}" {% if preselected_employer_id and employer.id == preselected_employer_id %}selected{% endif %}>
+            {{ employer.name }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-6">
+        <label class="form-label small">Recruiter contact</label>
+        <select name="contact_id" class="form-select form-select-sm">
+          <option value="">No contact</option>
+          {% for contact in contacts %}
+          <option value="{{ contact.id }}">{{ contact.name }}{% if contact.role %} ({{ contact.role }}){% endif %}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      {% if preselected_job_id %}<input type="hidden" name="job_id" value="{{ preselected_job_id }}">{% endif %}
+      {% if preselected_application_workflow_id %}
+      <input type="hidden" name="application_workflow_id" value="{{ preselected_application_workflow_id }}">
+      {% endif %}
+
+      <div class="col-md-4">
+        <label class="form-label small">Interview type</label>
+        <select name="interview_type" class="form-select form-select-sm" required>
+          {% for type in interview_types %}
+          <option value="{{ type.value }}">{{ type.value.replace('_', ' ')|title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small">Stage</label>
+        <select name="interview_stage" class="form-select form-select-sm">
+          <option value="">&mdash;</option>
+          {% for stage in interview_stages %}
+          <option value="{{ stage.value }}">{{ stage.value.replace('_', ' ')|title }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small">Duration (minutes)</label>
+        <input type="number" name="duration_minutes" class="form-control form-control-sm" value="60">
+      </div>
+
+      <div class="col-md-4">
+        <label class="form-label small">Date &amp; time</label>
+        <input type="datetime-local" name="scheduled_at" class="form-control form-control-sm" required>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small">Timezone</label>
+        <input type="text" name="timezone" class="form-control form-control-sm" value="Europe/London">
+      </div>
+      <div class="col-md-4">
+        <label class="form-label small">Meeting link (Teams / Zoom / Meet)</label>
+        <input type="url" name="meeting_link" class="form-control form-control-sm" placeholder="https://...">
+      </div>
+
+      <div class="col-md-6">
+        <label class="form-label small">Location</label>
+        <input type="text" name="location" class="form-control form-control-sm" placeholder="e.g. Main Hospital, Room 4">
+      </div>
+      <div class="col-md-6">
+        <label class="form-label small">Interviewer name(s), comma-separated</label>
+        <input type="text" name="interviewer_names" class="form-control form-control-sm" placeholder="Dr. Smith, Jane Recruiter">
+      </div>
+
+      <div class="col-12">
+        <label class="form-label small">Reminders</label>
+        <div class="d-flex flex-wrap gap-3">
+          {% for offset in reminder_offsets %}
+          <div class="form-check">
+            <input class="form-check-input" type="checkbox" name="reminder_offsets" value="{{ offset.value }}"
+                   id="offset-{{ offset.value }}" {% if offset.value in ('one_day', 'thirty_minutes') %}checked{% endif %}>
+            <label class="form-check-label small" for="offset-{{ offset.value }}">
+              {{ offset.value.replace('_', ' ')|title }} before
+            </label>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="col-12">
+        <label class="form-label small">Notes</label>
+        <textarea name="notes" class="form-control form-control-sm" rows="2"></textarea>
+      </div>
+
+      <div class="col-12">
+        <button type="submit" class="btn btn-primary">Schedule interview</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

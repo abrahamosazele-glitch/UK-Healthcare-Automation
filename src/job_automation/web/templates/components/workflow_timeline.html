@@ -1,0 +1,21 @@
+{# Expects `history` (a list of WorkflowStatusHistoryRecord, oldest first —
+   see WorkflowRepository.get_status_history()) in context. #}
+<ol class="workflow-timeline list-unstyled">
+  {% for entry in history %}
+  <li class="workflow-timeline-item">
+    <div class="workflow-timeline-marker"></div>
+    <div class="workflow-timeline-content">
+      <div class="d-flex justify-content-between">
+        <span>
+          {% if entry.from_status %}{{ entry.from_status.replace('_', ' ')|title }} &rarr; {% endif %}
+          <strong>{{ entry.to_status.replace('_', ' ')|title }}</strong>
+        </span>
+        <span class="text-muted small">{{ entry.created_at.strftime('%Y-%m-%d %H:%M') }}</span>
+      </div>
+      {% if entry.note %}<p class="small text-muted mb-0">{{ entry.note }}</p>{% endif %}
+    </div>
+  </li>
+  {% else %}
+  <li class="text-muted">No status history yet.</li>
+  {% endfor %}
+</ol>

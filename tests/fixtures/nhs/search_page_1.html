@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html>
+<head><meta charset="utf-8"><title>NHS Jobs (fixture) - Search Results - Page 1</title></head>
+<body>
+<h1>Search results</h1>
+<p class="search-results__page-info">Page 1 of 2</p>
+
+<ul class="search-results__list">
+
+  <li class="search-result" data-reference="C9123-26-0001">
+    <h2 class="search-result__title"><a href="job_detail.html?ref=C9123-26-0001">Registered Nurse - Adult Ward</a></h2>
+    <p class="search-result__employer">Example NHS Foundation Trust</p>
+    <p class="search-result__location">London</p>
+    <ul class="search-result__meta">
+      <li class="search-result__salary">£29,970 - £36,483 per annum</li>
+      <li class="search-result__band">Band 5</li>
+      <li class="search-result__contract">Permanent</li>
+      <li class="search-result__pattern">Full-time, Part-time, Flexible working</li>
+    </ul>
+    <p class="search-result__closing-date">Closing date: 15 August 2026</p>
+    <p class="search-result__posted-date">Posted date: 1 July 2026</p>
+    <span class="search-result__reference">Reference: C9123-26-0001</span>
+  </li>
+
+  <!-- Intentionally malformed: no .search-result__title element, to prove
+       NHSParser/BaseParser.parse_all() skips and logs instead of aborting
+       the whole page. -->
+  <li class="search-result" data-reference="C9123-26-0002">
+    <p class="search-result__employer">Broken Listing Trust</p>
+    <p class="search-result__location">Unknown</p>
+  </li>
+
+  <li class="search-result" data-reference="C9123-26-0003">
+    <h2 class="search-result__title"><a href="job_detail.html?ref=C9123-26-0003">Healthcare Assistant - Nights</a></h2>
+    <p class="search-result__employer">Example Community Health NHS Trust</p>
+    <p class="search-result__location">Manchester</p>
+    <ul class="search-result__meta">
+      <li class="search-result__salary">£23,615 - £23,911 per annum pro rata</li>
+      <li class="search-result__band">Band 2</li>
+      <li class="search-result__contract">Fixed term: 12 months</li>
+      <li class="search-result__pattern">Night shifts</li>
+    </ul>
+    <p class="search-result__closing-date">Closing date: 20 August 2026</p>
+    <p class="search-result__posted-date">Posted date: 2 July 2026</p>
+    <span class="search-result__reference">Reference: C9123-26-0003</span>
+  </li>
+
+</ul>
+
+<a class="search-results__next-page" href="search_page_2.html">Next page</a>
+</body>
+</html>
