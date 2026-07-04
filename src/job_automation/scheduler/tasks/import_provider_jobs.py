@@ -4,12 +4,37 @@ Trac Jobs, Reed by default — see `settings.job_ingestion_providers`), then
 automatically AI-match every newly-created listing and publish the
 appropriate notifications.
 
-Runs once daily (see `task_registry.TASK_REGISTRY`'s `daily_at_hour` for
-this task, and `scheduler.job_scheduler.create_scheduler()`'s `CronTrigger`
-branch), not on a fixed interval — "refresh every morning" means a
-predictable time of day. The dashboard's manual "Run now" button still
-works regardless, calling this exact same function through
-`SchedulerService.run_task()`.
+def run(session: Session) -> dict:
+    logger.warning("========== IMPORT_PROVIDER_JOBS STARTED ==========")
+
+    result = run_ingestion(session)
+
+    logger.warning("========== AFTER RUN_INGESTION ==========")
+
+    session.flush()
+
+    match_summary = process_new_jobs(session, result.newly_created_job_ids)
+
+    logger.warning("========== AFTER PROCESS_NEW_JOBS ==========")
+
+    summary = result.to_summary_dict()
+    summary.update(match_summary)
+
+    logger.warning("SUMMARY: {}", summary)
+
+    event_bus.publish(
+        Event(
+            event_type=EventType.JOB_IMPORTED,
+            payload={
+                "jobs_created": result.jobs_created,
+                "jobs_updated": result.jobs_updated,
+                **summary,
+            },
+        ),
+        session,
+    )
+
+    return summary
 
 Publishes one `JOB_IMPORTED` event summarizing every provider's totals
 combined (never calls `NotificationService` directly — see
