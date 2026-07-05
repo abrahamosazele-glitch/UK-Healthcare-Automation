@@ -57,8 +57,14 @@ def page(browser: Browser) -> Iterator[Page]:
 @pytest.fixture(scope="session")
 def nhs_fixture_url() -> Iterator[str]:
     """Serves tests/fixtures/nhs/ over local HTTP for the duration of the
-    test session — never touches the real jobs.nhs.uk."""
-    with serve_fixture_site(FIXTURES_DIR / "nhs") as base_url:
+    test session — never touches the real jobs.nhs.uk. Requests under
+    `/candidate/jobadvert/<reference>` (the real site's job-detail URL
+    shape) are rewritten to the one shared `job_detail.html` fixture, so
+    search-result hrefs can use the real path structure and exercise the
+    scraper's real reference-derivation logic end-to-end."""
+    with serve_fixture_site(
+        FIXTURES_DIR / "nhs", path_prefix_map={"/candidate/jobadvert/": "/job_detail.html"}
+    ) as base_url:
         yield base_url
 
 

@@ -2,51 +2,77 @@
 <html>
 <head><meta charset="utf-8"><title>NHS Jobs (fixture) - Search Results - Page 1</title></head>
 <body>
-<h1>Search results</h1>
-<p class="search-results__page-info">Page 1 of 2</p>
+<h1 data-test="search-result-query">2 jobs found for Registered Nurse</h1>
 
-<ul class="search-results__list">
+<ul class="nhsuk-list">
 
-  <li class="search-result" data-reference="C9123-26-0001">
-    <h2 class="search-result__title"><a href="job_detail.html?ref=C9123-26-0001">Registered Nurse - Adult Ward</a></h2>
-    <p class="search-result__employer">Example NHS Foundation Trust</p>
-    <p class="search-result__location">London</p>
-    <ul class="search-result__meta">
-      <li class="search-result__salary">£29,970 - £36,483 per annum</li>
-      <li class="search-result__band">Band 5</li>
-      <li class="search-result__contract">Permanent</li>
-      <li class="search-result__pattern">Full-time, Part-time, Flexible working</li>
+  <li class="nhsuk-list-panel search-result nhsuk-u-padding-3" data-test="search-result">
+    <h2 class="nhsuk-heading-m nhsuk-u-margin-bottom-2">
+      <a href="/candidate/jobadvert/C9123-26-0001" data-test="search-result-job-title">Registered Nurse - Adult Ward</a>
+    </h2>
+
+    <div class="nhsuk-u-margin-bottom-4" data-test="search-result-location">
+      <h3 class="nhsuk-u-font-weight-bold">
+        Example NHS Foundation Trust
+        <div class="location-font-size">
+          The area below is where the role is located: London
+        </div>
+      </h3>
+    </div>
+
+    <ul class="ad-job-info nhsuk-list">
+      <li data-test="search-result-salary" class="marginBt">Salary: <strong class="nhsuk-u-font-weight-bold">£29,970 - £36,483 per annum</strong></li>
+      <li data-test="search-result-publicationDate">Date posted: <strong class="nhsuk-u-font-weight-bold">1 July 2026</strong></li>
+      <li data-test="search-result-closingDate">Closing date: <strong class="nhsuk-u-font-weight-bold">15 August 2026</strong></li>
+      <li data-test="search-result-jobType" class="marginBt">Contract type: <strong class="nhsuk-u-font-weight-bold">Permanent</strong></li>
+      <li data-test="search-result-workingPattern" class="marginBt">Working pattern: <strong class="nhsuk-u-font-weight-bold">Full-time, Part-time, Flexible working</strong></li>
     </ul>
-    <p class="search-result__closing-date">Closing date: 15 August 2026</p>
-    <p class="search-result__posted-date">Posted date: 1 July 2026</p>
-    <span class="search-result__reference">Reference: C9123-26-0001</span>
   </li>
 
-  <!-- Intentionally malformed: no .search-result__title element, to prove
-       NHSParser/BaseParser.parse_all() skips and logs instead of aborting
-       the whole page. -->
-  <li class="search-result" data-reference="C9123-26-0002">
-    <p class="search-result__employer">Broken Listing Trust</p>
-    <p class="search-result__location">Unknown</p>
+  <!-- Intentionally malformed: no a[data-test="search-result-job-title"], to
+       prove NHSParser/BaseParser.parse_all() skips and logs instead of
+       aborting the whole page. -->
+  <li class="nhsuk-list-panel search-result nhsuk-u-padding-3" data-test="search-result">
+    <div class="nhsuk-u-margin-bottom-4" data-test="search-result-location">
+      <h3 class="nhsuk-u-font-weight-bold">Broken Listing Trust</h3>
+    </div>
   </li>
 
-  <li class="search-result" data-reference="C9123-26-0003">
-    <h2 class="search-result__title"><a href="job_detail.html?ref=C9123-26-0003">Healthcare Assistant - Nights</a></h2>
-    <p class="search-result__employer">Example Community Health NHS Trust</p>
-    <p class="search-result__location">Manchester</p>
-    <ul class="search-result__meta">
-      <li class="search-result__salary">£23,615 - £23,911 per annum pro rata</li>
-      <li class="search-result__band">Band 2</li>
-      <li class="search-result__contract">Fixed term: 12 months</li>
-      <li class="search-result__pattern">Night shifts</li>
+  <li class="nhsuk-list-panel search-result nhsuk-u-padding-3" data-test="search-result">
+    <h2 class="nhsuk-heading-m nhsuk-u-margin-bottom-2">
+      <a href="/candidate/jobadvert/C9123-26-0003" data-test="search-result-job-title">Healthcare Assistant - Nights</a>
+    </h2>
+
+    <div class="nhsuk-u-margin-bottom-4" data-test="search-result-location">
+      <h3 class="nhsuk-u-font-weight-bold">
+        Example Community Health NHS Trust
+        <div class="location-font-size">
+          The area below is where the role is located: Manchester
+        </div>
+      </h3>
+    </div>
+
+    <ul class="ad-job-info nhsuk-list">
+      <li data-test="search-result-salary" class="marginBt">Salary: <strong class="nhsuk-u-font-weight-bold">£23,615 - £23,911 per annum pro rata</strong></li>
+      <li data-test="search-result-publicationDate">Date posted: <strong class="nhsuk-u-font-weight-bold">2 July 2026</strong></li>
+      <li data-test="search-result-closingDate">Closing date: <strong class="nhsuk-u-font-weight-bold">20 August 2026</strong></li>
+      <li data-test="search-result-jobType" class="marginBt">Contract type: <strong class="nhsuk-u-font-weight-bold">Fixed term: 12 months</strong></li>
+      <li data-test="search-result-workingPattern" class="marginBt">Working pattern: <strong class="nhsuk-u-font-weight-bold">Night shifts</strong></li>
     </ul>
-    <p class="search-result__closing-date">Closing date: 20 August 2026</p>
-    <p class="search-result__posted-date">Posted date: 2 July 2026</p>
-    <span class="search-result__reference">Reference: C9123-26-0003</span>
   </li>
 
 </ul>
 
-<a class="search-results__next-page" href="search_page_2.html">Next page</a>
+<nav class="nhsuk-pagination" role="navigation" aria-label="Pagination">
+  <ul class="nhsuk-list nhsuk-pagination__list">
+    <li class="nhsuk-pagination-item--previous"></li>
+    <li class="nhsuk-pagination-item--next">
+      <a class="nhsuk-pagination__link nhsuk-pagination__link--next" href="search_page_2.html" data-test="search-next-page">
+        <span class="nhsuk-pagination__title">Next</span>
+        <span class="nhsuk-pagination__page">Page 2 of 2</span>
+      </a>
+    </li>
+  </ul>
+</nav>
 </body>
 </html>

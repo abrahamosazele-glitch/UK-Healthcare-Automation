@@ -8,8 +8,8 @@ pagination is closely tied to search results (there's nothing to paginate
 without a search), so colocating them is a reasonable reading of that list
 rather than introducing a 6th file.
 
-Selectors here follow the same fixture-driven approach as the rest of this
-package — see nhs_parser.py's module docstring for why.
+Selectors here are verified against the real `nhsuk-pagination` markup —
+see nhs_parser.py's module docstring for how this was confirmed.
 """
 
 from __future__ import annotations
@@ -27,9 +27,17 @@ from job_automation.utils.logger import logger
 if TYPE_CHECKING:
     from playwright.sync_api import Page
 
-NEXT_PAGE_SELECTOR = "a.search-results__next-page"
-PREVIOUS_PAGE_SELECTOR = "a.search-results__previous-page"
-PAGE_INFO_SELECTOR = ".search-results__page-info"
+NEXT_PAGE_SELECTOR = 'a[data-test="search-next-page"]'
+#: No `data-test` value for "previous" was directly observable (only page 1
+#: of the real site was captured, where "previous" is empty), so this
+#: targets the pagination container's "previous" list item instead of
+#: guessing a data-test string — directly confirmed empty/absent on page 1,
+#: and expected to hold an `<a>` on later pages by symmetry with "next".
+PREVIOUS_PAGE_SELECTOR = "li.nhsuk-pagination-item--previous a"
+#: Lives inside the "next" link (`<span class="nhsuk-pagination__page">Page
+#: X of Y</span>`), so it's naturally unavailable on the last page — same
+#: graceful-degradation behavior `total_pages()` already had.
+PAGE_INFO_SELECTOR = "span.nhsuk-pagination__page"
 _PAGE_INFO_RE = re.compile(r"Page\s+(\d+)\s+of\s+(\d+)", re.IGNORECASE)
 
 
@@ -38,11 +46,11 @@ def build_nhs_search_criteria(
     keywords: list[str] | None = None,
     location: str | None = None,
     distance: str | None = None,
-    salary_min: str | None = None,
-    band: str | None = None,
+    salary_from: str | None = None,
+    salary_to: str | None = None,
+    pay_band: str | None = None,
     contract_type: str | None = None,
     working_pattern: str | None = None,
-    visa_sponsorship: bool | None = None,
     sort_by: str | None = None,
 ) -> SearchCriteria:
     """Typed convenience constructor for NHS Jobs search criteria, so callers
@@ -51,16 +59,16 @@ def build_nhs_search_criteria(
     filters: dict[str, str] = {}
     if distance:
         filters["distance"] = distance
-    if salary_min:
-        filters["salary_min"] = salary_min
-    if band:
-        filters["band"] = band
+    if salary_from:
+        filters["salary_from"] = salary_from
+    if salary_to:
+        filters["salary_to"] = salary_to
+    if pay_band:
+        filters["pay_band"] = pay_band
     if contract_type:
         filters["contract_type"] = contract_type
     if working_pattern:
         filters["working_pattern"] = working_pattern
-    if visa_sponsorship is not None:
-        filters["visa_sponsorship"] = "true" if visa_sponsorship else "false"
 
     return SearchCriteria(keywords=keywords or [], location=location, filters=filters, sort_by=sort_by)
 

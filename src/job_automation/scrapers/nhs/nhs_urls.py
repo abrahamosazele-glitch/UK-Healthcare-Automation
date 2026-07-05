@@ -1,15 +1,19 @@
 """
 URL construction for NHS Jobs (jobs.nhs.uk).
 
-**Compliance note**: per this milestone's constraints, no further live-site
-inspection was performed beyond what was already gathered before this
-constraint was put in place (the public homepage and its Terms and
-Conditions, checked only to confirm scraping permissibility before any code
-was written). The query parameter names below are a best-effort based on
-typical GOV.UK Design System search-service URL conventions and NHS Jobs'
-general public structure — they are **not verified against the live DOM**
-and should be confirmed/corrected before this scraper is ever pointed at
-production. See docs/NHS_SCRAPER.md's "Known limitations" section.
+Query parameter names/values below are verified against the live
+`/candidate/search/results` page (inspected via a manually-saved real
+search-results page and a Playwright `page.content()` capture of the same
+search — both agreed on every parameter and value used here).
+
+There is **no `sponsorship`/visa filter anywhere on the real search form**
+(confirmed by inspecting the full rendered filter form) — the previous
+`visa_sponsorship` filter here was invented and has been removed.
+
+Other confirmed real parameters not modeled here (`jobReference`,
+`employer`, `staffGroup`, `payRange`, `covidJobsOnly`) are left out because
+nothing in this codebase currently needs them — add them the same way as
+the existing filters if a caller needs them later.
 
 `base_url` and `search_path` are parameters (not hardcoded) specifically so
 tests can point the exact same URL-building logic at a local fixture server
@@ -38,8 +42,9 @@ def build_search_url(
     """Build a search-results URL from generic SearchCriteria.
 
     Expected `criteria.filters` keys (all optional): "distance" (miles),
-    "salary_min", "band", "contract_type", "working_pattern",
-    "visa_sponsorship" ("true"/"false"). See nhs_search.py's
+    "salary_from"/"salary_to", "pay_band" (real site values like "BAND_5",
+    not "Band 5"), "contract_type" (e.g. "Permanent"), "working_pattern"
+    (real site slugs like "full-time", "part-time"). See nhs_search.py's
     `build_nhs_search_criteria()` for a typed constructor that fills these
     in correctly rather than requiring callers to know the raw key names.
     """
@@ -52,16 +57,16 @@ def build_search_url(
     filters = criteria.filters
     if filters.get("distance"):
         params["distance"] = filters["distance"]
-    if filters.get("salary_min"):
-        params["salary"] = filters["salary_min"]
-    if filters.get("band"):
-        params["band"] = filters["band"]
+    if filters.get("salary_from"):
+        params["salaryFrom"] = filters["salary_from"]
+    if filters.get("salary_to"):
+        params["salaryTo"] = filters["salary_to"]
+    if filters.get("pay_band"):
+        params["payBand"] = filters["pay_band"]
     if filters.get("contract_type"):
         params["contractType"] = filters["contract_type"]
     if filters.get("working_pattern"):
         params["workingPattern"] = filters["working_pattern"]
-    if filters.get("visa_sponsorship"):
-        params["sponsorship"] = filters["visa_sponsorship"]
 
     if criteria.sort_by:
         params["sort"] = criteria.sort_by
@@ -82,5 +87,8 @@ def resolve_url(href: str, *, current_url: str) -> str:
     path, not necessarily the site root (e.g. a link on
     `/candidate/search/results` pointing to `../jobadvert/123` only
     resolves correctly relative to that page). Absolute hrefs pass through
-    unchanged, which `urljoin` already does correctly."""
+    unchanged, which `urljoin` already does correctly.
+
+    Confirmed necessary: real search-result cards use relative hrefs
+    (e.g. `/candidate/jobadvert/E0023-26155?...`), not absolute ones."""
     return urljoin(current_url, href)

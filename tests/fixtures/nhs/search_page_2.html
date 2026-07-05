@@ -2,29 +2,44 @@
 <html>
 <head><meta charset="utf-8"><title>NHS Jobs (fixture) - Search Results - Page 2</title></head>
 <body>
-<h1>Search results</h1>
-<p class="search-results__page-info">Page 2 of 2</p>
+<h1 data-test="search-result-query">1 job found for Registered Nurse</h1>
 
-<ul class="search-results__list">
+<ul class="nhsuk-list">
 
-  <li class="search-result" data-reference="C9123-26-0004">
-    <h2 class="search-result__title"><a href="job_detail.html?ref=C9123-26-0004">Senior Care Coordinator</a></h2>
-    <p class="search-result__employer">Example NHS Foundation Trust</p>
-    <p class="search-result__location">Birmingham</p>
-    <ul class="search-result__meta">
-      <li class="search-result__salary">£35,392 - £42,618 per annum</li>
-      <li class="search-result__band">Band 6</li>
-      <li class="search-result__contract">Permanent</li>
-      <li class="search-result__pattern">Full-time</li>
+  <li class="nhsuk-list-panel search-result nhsuk-u-padding-3" data-test="search-result">
+    <h2 class="nhsuk-heading-m nhsuk-u-margin-bottom-2">
+      <a href="/candidate/jobadvert/C9123-26-0004" data-test="search-result-job-title">Senior Care Coordinator</a>
+    </h2>
+
+    <div class="nhsuk-u-margin-bottom-4" data-test="search-result-location">
+      <h3 class="nhsuk-u-font-weight-bold">
+        Example NHS Foundation Trust
+        <div class="location-font-size">
+          The area below is where the role is located: Birmingham
+        </div>
+      </h3>
+    </div>
+
+    <ul class="ad-job-info nhsuk-list">
+      <li data-test="search-result-salary" class="marginBt">Salary: <strong class="nhsuk-u-font-weight-bold">£35,392 - £42,618 per annum</strong></li>
+      <li data-test="search-result-publicationDate">Date posted: <strong class="nhsuk-u-font-weight-bold">3 July 2026</strong></li>
+      <li data-test="search-result-closingDate">Closing date: <strong class="nhsuk-u-font-weight-bold">18 August 2026</strong></li>
+      <li data-test="search-result-jobType" class="marginBt">Contract type: <strong class="nhsuk-u-font-weight-bold">Permanent</strong></li>
+      <li data-test="search-result-workingPattern" class="marginBt">Working pattern: <strong class="nhsuk-u-font-weight-bold">Full-time</strong></li>
     </ul>
-    <p class="search-result__closing-date">Closing date: 18 August 2026</p>
-    <p class="search-result__posted-date">Posted date: 3 July 2026</p>
-    <span class="search-result__reference">Reference: C9123-26-0004</span>
   </li>
 
 </ul>
 
-<!-- No .search-results__next-page link — this is the true last page. -->
-<a class="search-results__previous-page" href="search_page_1.html">Previous page</a>
+<!-- Last page: no next-page link. -->
+<nav class="nhsuk-pagination" role="navigation" aria-label="Pagination">
+  <ul class="nhsuk-list nhsuk-pagination__list">
+    <li class="nhsuk-pagination-item--previous">
+      <a class="nhsuk-pagination__link nhsuk-pagination__link--previous" href="search_page_1.html" data-test="search-previous-page">
+        <span class="nhsuk-pagination__title">Previous</span>
+      </a>
+    </li>
+  </ul>
+</nav>
 </body>
 </html>

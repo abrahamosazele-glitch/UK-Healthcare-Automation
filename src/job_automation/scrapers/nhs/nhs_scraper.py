@@ -8,6 +8,13 @@ Owns its own `ScrapeStats` rather than reusing something from
 `scrapers.base` — no other scraper needs identical stats tracking yet; if a
 second site scraper needs the same shape later, promote this to
 `scrapers/base/` at that point rather than speculatively generalizing now.
+
+`enrich_details` defaults to `False`: `NHSParser.parse_detail()` still
+targets fixture-only, unverified-against-the-live-DOM selectors (see
+nhs_parser.py's module docstring), so detail-page navigation is skipped by
+default and jobs import using only search-results-page fields. Even when
+enabled, a detail-enrichment failure never blocks persistence — the job is
+always saved with whatever summary fields `NHSParser.parse()` already got.
 """
 
 from __future__ import annotations
@@ -57,6 +64,7 @@ class NHSScraper(BaseScraper):
         *,
         base_url: str = NHS_BASE_URL,
         search_path: str = SEARCH_RESULTS_PATH,
+        enrich_details: bool = False,
         ingestion_service: JobIngestionService | None = None,
         browser_manager: "BrowserManager | None" = None,
         context_manager: "ContextManager | None" = None,
@@ -79,6 +87,7 @@ class NHSScraper(BaseScraper):
             download_manager=download_manager,
         )
         self._criteria = criteria
+        self.enrich_details = enrich_details
         self.search_flow = NHSSearch(self.page_manager, base_url=base_url, search_path=search_path)
         self.paginator = NHSPaginator(self.page_manager, max_pages=self.config.max_pages)
         self.parser = NHSParser()
@@ -130,17 +139,24 @@ class NHSScraper(BaseScraper):
         return all_jobs
 
     def _enrich_and_persist(self, job: ParsedJob) -> None:
-        """Visit the job's own advert page for detail fields, persist it,
-        and always navigate back to the results listing afterward —
-        regardless of whether this job succeeded or failed — so the next
-        card/page continues from a known-good state."""
+        """Optionally visit the job's own advert page for detail fields,
+        then persist it. Detail enrichment is best-effort and never blocks
+        persistence — if it's disabled (`enrich_details=False`, the
+        default) or it fails, the job is still saved with whatever summary
+        fields `NHSParser.parse()` already got. Always navigates back to
+        the results listing afterward if it navigated away, regardless of
+        whether enrichment succeeded, so the next card/page continues from
+        a known-good state."""
         navigated_to_detail = False
-        try:
-            if job.job_url:
+        if self.enrich_details and job.job_url:
+            try:
                 self.page_manager.navigate(self.page, resolve_url(job.job_url, current_url=self.page.url))
                 navigated_to_detail = True
                 self.parser.parse_detail(self.page, job)
+            except Exception as exc:
+                logger.warning("Detail-page enrichment failed for {!r}, saving summary only: {}", job.title, exc)
 
+        try:
             result = self.ingestion.save_parsed_job(job)
             if result.created:
                 self.stats.jobs_inserted += 1

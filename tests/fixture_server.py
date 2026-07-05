@@ -21,8 +21,25 @@ from typing import Iterator
 
 
 @contextmanager
-def serve_fixture_site(directory: Path) -> Iterator[str]:
-    handler_cls = functools.partial(SimpleHTTPRequestHandler, directory=str(directory))
+def serve_fixture_site(directory: Path, *, path_prefix_map: dict[str, str] | None = None) -> Iterator[str]:
+    """`path_prefix_map` lets a fixture site mimic real path-based routing
+    (e.g. NHS Jobs' `/candidate/jobadvert/<reference>` detail-page URLs)
+    without needing one static file per reference: any request path
+    starting with a mapped prefix is served from the mapped file instead,
+    while the reference itself stays in the URL exactly as production code
+    would see it."""
+    prefix_map = path_prefix_map or {}
+
+    class _Handler(SimpleHTTPRequestHandler):
+        def do_GET(self) -> None:  # noqa: N802 - stdlib method name
+            path_only = self.path.split("?", 1)[0]
+            for prefix, target in prefix_map.items():
+                if path_only.startswith(prefix):
+                    self.path = target
+                    break
+            super().do_GET()
+
+    handler_cls = functools.partial(_Handler, directory=str(directory))
     httpd = ThreadingHTTPServer(("127.0.0.1", 0), handler_cls)
     thread = threading.Thread(target=httpd.serve_forever, daemon=True)
     thread.start()

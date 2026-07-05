@@ -20,12 +20,17 @@ downloading extracts "for personal non-commercial use" but state:
 A scraper that systematically walks search results and stores structured
 job data in a database is exactly the kind of automated reproduction this
 clause is written to restrict, even for personal, non-commercial use.
-Because of this, **this milestone does not access the live NHS Jobs site at
-all**. Every test and the verification flow run against local static HTML
-fixtures (`tests/fixtures/nhs/`) served over local HTTP
-(`tests/fixture_server.py`) — nothing here has ever made a request to
-`jobs.nhs.uk`. See [Known limitations](#known-limitations) for exactly what
-that means for selector accuracy.
+Because of this, **this codebase never makes a live request to NHS Jobs
+itself**. Every test and the verification flow run against local static
+HTML fixtures (`tests/fixtures/nhs/`) served over local HTTP
+(`tests/fixture_server.py`).
+
+The search-results selectors below *were* subsequently verified for
+accuracy — via real search-results HTML the user captured themselves
+(one manually-saved page, one Playwright `page.content()` render) and
+handed to this codebase for inspection, rather than this code fetching
+anything itself — but no job-advert/detail page has been verified the same
+way yet. See [Known limitations](#known-limitations).
 
 ## Architecture
 
@@ -78,8 +83,9 @@ required fields didn't all fit what already existed:
 ## Search flow
 
 ```
-build_nhs_search_criteria(keywords=..., location=..., band=..., contract_type=...,
-                           working_pattern=..., distance=..., salary_min=..., visa_sponsorship=...)
+build_nhs_search_criteria(keywords=..., location=..., distance=...,
+                           salary_from=..., salary_to=..., pay_band=...,
+                           contract_type=..., working_pattern=...)
         │  (typed constructor — hides the raw SearchCriteria.filters key names)
         ▼
 SearchCriteria(keywords, location, filters={...}, sort_by)
@@ -88,16 +94,21 @@ SearchCriteria(keywords, location, filters={...}, sort_by)
 NHSSearch.search(page, criteria)          [BaseSearch's template method]
     ├─ build_search_url(criteria)          → nhs_urls.build_search_url(criteria, base_url, search_path)
     ├─ PageManager.navigate(page, url)     → rate-limited, retried on transient failure
-    └─ execute_search(page, criteria)      → confirms .search-result cards are visible
+    └─ execute_search(page, criteria)      → confirms li[data-test="search-result"] cards are visible
 ```
 
-All 8 required search facets (keyword, location, distance, salary, band,
-contract type, working pattern, visa sponsorship) are supported via
-`SearchCriteria.filters`, translated into query parameters by
-`nhs_urls.build_search_url()`. `base_url`/`search_path` are parameters, not
-hardcoded — this is what let the exact same URL-building code be pointed at
-a local fixture server for testing and, unmodified, at the real
-`NHS_BASE_URL`/`SEARCH_RESULTS_PATH` constants for any future compliant use.
+Query parameter names/values are verified against the real
+`/candidate/search/results` page: `keyword`, `location`, `distance`,
+`salaryFrom`/`salaryTo` (not a single `salary`), `payBand` (real values
+like `BAND_5`, not `band=Band 5`), `contractType`, `workingPattern`. There
+is **no visa-sponsorship filter anywhere on the real search form** — a
+previous `visa_sponsorship` filter here was invented and has been removed.
+Other confirmed real filters (`jobReference`, `employer`, `staffGroup`,
+`payRange`, `covidJobsOnly`) aren't modeled since nothing here needs them
+yet. `base_url`/`search_path` are parameters, not hardcoded — this is what
+lets the exact same URL-building code be pointed at a local fixture server
+for testing and, unmodified, at the real `NHS_BASE_URL`/`SEARCH_RESULTS_PATH`
+constants.
 
 ## Parser flow
 
@@ -107,10 +118,11 @@ page. `NHSParser` mirrors this with two phases:
 
 ```
 NHSParser.parse(element)         [required by BaseParser, called per card]
-    → title, employer, location, salary, band, contract_type, hours,
+    → title, employer, location, salary, contract_type, hours,
       closing_date, posted_date, job_url, reference_number
-    → raises ParsingError if .search-result__title is missing (fatal —
-      BaseParser.parse_all() catches this and skips just that card)
+    → raises ParsingError if a[data-test="search-result-job-title"] is
+      missing (fatal — BaseParser.parse_all() catches this and skips just
+      that card)
 
 NHSScraper._enrich_and_persist(job)
     → navigates to job.job_url
@@ -122,18 +134,39 @@ NHSScraper._enrich_and_persist(job)
     → JobIngestionService.save_parsed_job(job)
 ```
 
-A deliberately malformed card (missing `.search-result__title`) is included
-in `tests/fixtures/nhs/search_page_1.html` to prove
-`BaseParser.parse_all()`'s skip-and-log resilience actually engages for
-NHS's parser, not just in the abstract.
+Card selectors are verified against the real DOM: each card is
+`li[data-test="search-result"]`; title/link via
+`a[data-test="search-result-job-title"]`; salary, dates, contract type, and
+working pattern each via a `li[data-test="search-result-*"] strong`; and
+employer+location share one `div[data-test="search-result-location"]`
+block (the employer is the `<h3>`'s own text, the location is a nested
+`<div>` whose text has a literal `"The area below is where the role is
+located: "` prefix stripped). Real cards never expose an NHS AfC "band" at
+all, so `ParsedJob.band` is left unset by `parse()`; and there's no
+standalone reference-number field either, so `reference_number` is derived
+from the job URL's `/candidate/jobadvert/<reference>` path segment instead.
+
+A deliberately malformed card (missing the title link) is included in
+`tests/fixtures/nhs/search_page_1.html` to prove `BaseParser.parse_all()`'s
+skip-and-log resilience actually engages for NHS's parser, not just in the
+abstract.
+
+`parse_detail()` is **not yet updated** — no real job-advert page has been
+captured (a page saved from a job's own URL turned out to be another copy
+of the search-results page). It still targets the original fixture-only
+`.job-detail__*` classes; see [Known limitations](#known-limitations).
 
 ## Pagination
 
-`NHSPaginator(BasePaginator)` detects `a.search-results__next-page` /
-`a.search-results__previous-page` for next/previous, and additionally reads
-a `.search-results__page-info` ("Page X of Y") element for a page count —
-purely for logging/statistics, since `BasePaginator`'s `max_pages` safety
-cap doesn't need to know the total in advance. Two fixture pages
+`NHSPaginator(BasePaginator)` detects `a[data-test="search-next-page"]` for
+"next" (verified against the real DOM), and
+`li.nhsuk-pagination-item--previous a` for "previous" (the real site's
+"previous" `data-test` value was never directly observable — only page 1
+was captured, where "previous" is empty — so this targets the pagination
+container instead of guessing a string). Total pages are read from a
+`span.nhsuk-pagination__page` ("Page X of Y") element that lives inside the
+"next" link itself, so it's naturally unavailable on the last page — the
+same graceful-degradation behavior this already had. Two fixture pages
 (`search_page_1.html`, `search_page_2.html`) are enough to exercise: next
 detected on page 1, last-page correctly detected on page 2 (no next link),
 and — separately — a `max_pages=1` scraper config stopping after page 1
@@ -179,17 +212,21 @@ to the results listing regardless of whether that job succeeded.
 
 ## Known limitations
 
-- **Selectors are not verified against the live DOM.** Per the compliance
-  constraint, no further live-site inspection was performed while building
-  the parser/search/pagination selectors. They're a best-effort, realistic,
-  GOV.UK Design System-flavored scheme written to match this milestone's
-  own fixtures — real NHS Jobs markup will almost certainly differ and must
-  be confirmed before this scraper is ever pointed at a real, compliant
-  data source.
+- **`parse_detail()` is unverified against the live DOM.** Only
+  search-results pages have been captured and inspected so far — a page
+  the user tried to save from a job's own advert URL turned out to be
+  another copy of the search-results page. `nhs_parser.py`'s
+  `parse_detail()`, `tests/fixtures/nhs/job_detail.html`, and this doc's
+  description/requirements/benefits fields are still the original
+  fixture-only, unverified scheme. Update these together once a real
+  `/candidate/jobadvert/<reference>` page has been captured.
 - **`NHSLogin` is unverified and untested.** This milestone's fixtures cover
   search/parse/paginate/persist only (browsing NHS Jobs doesn't require an
   account); there's no login fixture, so `nhs_login.py`'s selectors are
-  pure best-effort and have never been exercised by any test.
+  pure best-effort and have never been exercised by any test. Its
+  `LOGIN_PATH` constant (`/candidate/login`) also doesn't match the real
+  observed login link (`/candidate/auth/login`) — left uncorrected since
+  login isn't part of the search-scraping flow this pass covers.
 - **One shared `job_detail.html` fixture stands in for every listing's
   advert page.** Real adverts each have unique content; the fixture proves
   the navigate/parse/go-back mechanics work, not that every possible advert
@@ -204,18 +241,16 @@ to the results listing regardless of whether that job succeeded.
 - **`employer_url` is frequently `None`.** Many NHS adverts don't link to
   the employing Trust's own website (candidates apply via NHS Jobs itself);
   this is expected, not a bug.
-- **`distance` is passed through as a raw string** (whatever unit/format a
-  real search form expects — miles, likely) since no live form was
-  inspected to confirm units or valid range.
+- **`band` is never populated by this parser.** Confirmed absent from every
+  sampled real search-result card; it may still exist on a job's own advert
+  page, to be confirmed once `parse_detail()` is updated.
 
 ## Future improvements
 
-- Verify and correct every selector against the real site once a compliant
-  access path is confirmed (e.g. an official API, or written permission
-  from NHSBSA) — this is a prerequisite for any production use, not an
-  optional improvement.
-- Add a login fixture and tests for `NHSLogin`/`session_valid()` once that
-  compliant path exists.
+- Verify `parse_detail()`, `nhs_login.py`, and `LOGIN_PATH` against real
+  advert-page and login-page HTML the same way the search-results side was
+  verified this pass (real captured HTML, not a live request from this
+  codebase).
 - Job de-activation: mark `is_active = False` for previously-seen jobs that
   no longer appear in a fresh search.
 - Promote `ScrapeStats` to `scrapers/base/` if a second site scraper (TRAC,

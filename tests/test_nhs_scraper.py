@@ -55,16 +55,16 @@ def test_nhs_parser_extracts_fields_and_skips_malformed_card(page: Page, nhs_fix
     assert nurse.employer == "Example NHS Foundation Trust"
     assert nurse.location == "London"
     assert nurse.salary == "£29,970 - £36,483 per annum"
-    assert nurse.band == "Band 5"
+    assert nurse.band is None, "real search-result cards never expose an AfC band"
     assert nurse.contract_type == "Permanent"
     assert nurse.hours == "Full-time, Part-time, Flexible working"
     assert nurse.reference_number == "C9123-26-0001"
-    assert nurse.job_url == "job_detail.html?ref=C9123-26-0001"
+    assert nurse.job_url == "/candidate/jobadvert/C9123-26-0001"
     assert nurse.closing_date == date(2026, 8, 15)
     assert nurse.posted_date == date(2026, 7, 1)
 
     hca = next(job for job in jobs if job.title == "Healthcare Assistant - Nights")
-    assert hca.band == "Band 2"
+    assert hca.band is None
     assert hca.contract_type == "Fixed term: 12 months"
 
 
@@ -163,11 +163,20 @@ def test_job_ingestion_service_inserts_then_updates_without_duplicating(db_sessi
 def test_nhs_scraper_full_run_persists_jobs_and_reports_statistics(
     db_session: Session, nhs_fixture_url: str
 ) -> None:
+    """Detail enrichment explicitly opted into here (`enrich_details=True`)
+    to keep exercising the navigate/parse_detail/go-back mechanics — it's
+    off by default in production until parse_detail() is verified against
+    the real DOM (see test_nhs_scraper_skips_detail_enrichment_by_default)."""
     config = ScraperConfig(browser=BrowserConfig(headless=True), max_pages=10)
     criteria = build_nhs_search_criteria(keywords=["Registered Nurse"], location="London")
 
     with NHSScraper(
-        config, criteria, db_session, base_url=nhs_fixture_url, search_path="/search_page_1.html"
+        config,
+        criteria,
+        db_session,
+        base_url=nhs_fixture_url,
+        search_path="/search_page_1.html",
+        enrich_details=True,
     ) as scraper:
         jobs = scraper.run()
         db_session.commit()
@@ -195,7 +204,12 @@ def test_nhs_scraper_full_run_persists_jobs_and_reports_statistics(
     # Running the same search again must update the 3 existing jobs, not
     # duplicate them.
     with NHSScraper(
-        config, criteria, db_session, base_url=nhs_fixture_url, search_path="/search_page_1.html"
+        config,
+        criteria,
+        db_session,
+        base_url=nhs_fixture_url,
+        search_path="/search_page_1.html",
+        enrich_details=True,
     ) as scraper_again:
         scraper_again.run()
         db_session.commit()
@@ -203,3 +217,30 @@ def test_nhs_scraper_full_run_persists_jobs_and_reports_statistics(
     assert scraper_again.stats.jobs_inserted == 0
     assert scraper_again.stats.jobs_updated == 3
     assert db_session.scalar(select(func.count()).select_from(Job)) == 3
+
+
+def test_nhs_scraper_skips_detail_enrichment_by_default(db_session: Session, nhs_fixture_url: str) -> None:
+    """`enrich_details` defaults to False: jobs must still import
+    successfully using only search-results-page fields, with no navigation
+    to a job's own advert page at all."""
+    config = ScraperConfig(browser=BrowserConfig(headless=True), max_pages=10)
+    criteria = build_nhs_search_criteria(keywords=["Registered Nurse"], location="London")
+
+    with NHSScraper(
+        config, criteria, db_session, base_url=nhs_fixture_url, search_path="/search_page_1.html"
+    ) as scraper:
+        assert scraper.enrich_details is False
+        jobs = scraper.run()
+        db_session.commit()
+
+        assert len(jobs) == 3
+        assert scraper.stats.jobs_inserted == 3
+        assert scraper.stats.jobs_failed == 0
+
+    nurse = db_session.scalars(select(Job).where(Job.external_id == "C9123-26-0001")).first()
+    assert nurse is not None
+    assert nurse.title == "Registered Nurse - Adult Ward"
+    assert nurse.salary_min == 29970
+    assert nurse.description is None
+    assert nurse.requirements is None
+    assert nurse.benefits is None
