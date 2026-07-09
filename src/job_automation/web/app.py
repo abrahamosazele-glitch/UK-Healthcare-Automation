@@ -322,6 +322,27 @@ def create_app() -> FastAPI:
         }
         return JSONResponse(body, status_code=200 if database_ok else 503)
 
+    @app.get("/diagnostics/database", include_in_schema=False)
+    def database_diagnostics(
+        session: Session = Depends(get_db_session),
+        _current_user: User = Depends(get_current_api_user),
+    ) -> JSONResponse:
+        """Confirms the scraper/scheduler/dashboard are reading and writing
+        the same database: active `settings.database_url`, job counts by
+        source, the most recently discovered jobs, and how many scheduler
+        task runs are on record. Requires login (a 401 for an anonymous
+        caller, same as every other JSON API route) since it surfaces real
+        job/scheduler data, not just a boolean like `/health`. See
+        `database.diagnostics.collect_database_diagnostics()` — also used
+        by `scripts/db_diagnostics.py` for the same report from the
+        command line (e.g. `railway run` against a deployed database with
+        no browser session)."""
+        from dataclasses import asdict
+
+        from job_automation.database.diagnostics import collect_database_diagnostics
+
+        return JSONResponse(asdict(collect_database_diagnostics(session)))
+
     logger.info("Web dashboard app created")
     return app
 

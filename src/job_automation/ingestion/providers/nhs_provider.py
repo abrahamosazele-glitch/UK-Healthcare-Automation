@@ -10,6 +10,14 @@ anything `NHSScraper` already does correctly.
 
 `source_name = "nhs_jobs"` matches `NHSScraper.site_name` exactly — both
 identify the same `Job.source_site` value.
+
+Runs one search per `settings.scrape_locations` entry via
+`ingestion.multi_location.run_per_location()` rather than joining every
+location into one query string — NHS Jobs' `location` filter narrows to
+one place, it isn't a list. A single `JobIngestionService` (and its
+`created_job_ids` tracking) is shared across every location's run so
+dedup/stats stay correct across the whole provider run, not just within
+one location.
 """
 
 from __future__ import annotations
@@ -19,6 +27,7 @@ from sqlalchemy.orm import Session
 from job_automation.config.settings import settings
 from job_automation.database.services import JobIngestionService
 from job_automation.ingestion.job_provider import JobProvider, ProviderRunStats
+from job_automation.ingestion.multi_location import run_per_location
 from job_automation.scrapers.base import ScraperConfig
 from job_automation.scrapers.nhs import NHSScraper, build_nhs_search_criteria
 
@@ -35,9 +44,6 @@ class NHSProvider(JobProvider):
 
     def fetch_jobs(self, session: Session) -> ProviderRunStats:
         config = ScraperConfig.from_settings(settings)
-        criteria = build_nhs_search_criteria(
-            keywords=settings.scrape_keywords, location=", ".join(settings.scrape_locations) or None
-        )
         ingestion = JobIngestionService(session, source_site=self.source_name)
 
         kwargs = {}
@@ -46,14 +52,22 @@ class NHSProvider(JobProvider):
         if self._search_path is not None:
             kwargs["search_path"] = self._search_path
 
-        with NHSScraper(config, criteria, session, ingestion_service=ingestion, **kwargs) as scraper:
-            scraper.run()
+        def _run_one(location: str | None) -> ProviderRunStats:
+            criteria = build_nhs_search_criteria(keywords=settings.scrape_keywords, location=location)
+            with NHSScraper(config, criteria, session, ingestion_service=ingestion, **kwargs) as scraper:
+                scraper.run()
+            return ProviderRunStats(
+                source=self.source_name,
+                jobs_seen=scraper.stats.jobs_parsed,
+                jobs_created=scraper.stats.jobs_inserted,
+                jobs_updated=scraper.stats.jobs_updated,
+                jobs_failed=scraper.stats.jobs_failed,
+            )
 
-        return ProviderRunStats(
-            source=self.source_name,
-            jobs_seen=scraper.stats.jobs_parsed,
-            jobs_created=scraper.stats.jobs_inserted,
-            jobs_updated=scraper.stats.jobs_updated,
-            jobs_failed=scraper.stats.jobs_failed,
-            newly_created_job_ids=list(ingestion.created_job_ids),
-        )
+        result = run_per_location(self.source_name, settings.scrape_locations, _run_one)
+        # `ingestion` is shared across every location's run, so its
+        # `created_job_ids` already reflects the whole provider run —
+        # simpler and more accurate than merging per-location lists that
+        # `_run_one()` never populates.
+        result.newly_created_job_ids = list(ingestion.created_job_ids)
+        return result

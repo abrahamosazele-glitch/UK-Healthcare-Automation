@@ -70,11 +70,21 @@ class Settings(BaseSettings):
     # — without it, `SCRAPE_LOCATIONS=London,Manchester` in `.env` fails to
     # parse as JSON at the settings-source level, before validation.
     scrape_locations: Annotated[list[str], NoDecode] = ["London", "Manchester", "Birmingham"]
+    # Covers the UK care-role taxonomy this project targets: generic care
+    # roles (Healthcare/Care Assistant, Support Worker, Senior Care Worker),
+    # care settings (domiciliary/residential/care home), and NHS-specific
+    # care roles are covered by NHSProvider's source itself rather than a
+    # separate keyword. "Sponsorship" is deliberately not a keyword here —
+    # it's tracked per-listing via `ParsedJob.visa_sponsorship`, not
+    # something any of these sites' search terms filter on.
     scrape_keywords: Annotated[list[str], NoDecode] = [
         "Healthcare Assistant",
-        "Support Worker",
         "Care Assistant",
+        "Support Worker",
         "Senior Care Worker",
+        "Domiciliary Care",
+        "Residential Care",
+        "Care Home",
     ]
     user_agent: str = "Mozilla/5.0 (compatible; UKHealthcareJobBot/1.0)"
 

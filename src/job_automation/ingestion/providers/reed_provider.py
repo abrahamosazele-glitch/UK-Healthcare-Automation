@@ -75,7 +75,18 @@ class ReedProvider(JobProvider):
         try:
             for keyword in settings.scrape_keywords:
                 for location in settings.scrape_locations or [None]:
-                    self._fetch_one_search(client, keyword, location, ingestion, stats)
+                    try:
+                        self._fetch_one_search(client, keyword, location, ingestion, stats)
+                    except ReedProviderError as exc:
+                        # One keyword/location request failing (a transient
+                        # network blip, a single bad response) shouldn't
+                        # lose every other combination's results — same
+                        # "one bad unit doesn't stop the rest" tolerance
+                        # `run_per_location()` applies for NHS/Trac. A
+                        # missing API key still aborts the whole run (see
+                        # the check above), since that's a configuration
+                        # problem, not a per-request one.
+                        logger.error("Reed search failed for {!r} in {!r}: {}", keyword, location, exc)
         finally:
             if self._client is None:
                 client.close()

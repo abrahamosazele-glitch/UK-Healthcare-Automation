@@ -16,8 +16,16 @@ from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import Session, sessionmaker
 
 from job_automation.config.settings import settings
+from job_automation.utils.logger import logger
 
 _connect_args = {"check_same_thread": False} if settings.database_url.startswith("sqlite") else {}
+
+# Logged unconditionally at import time (not gated behind create_app() or
+# any one entry point) so the same line appears in every process that ever
+# touches the database — the web app, the scheduler, scripts/*.py, a
+# Railway deploy's boot log — making it obvious the instant two of them
+# disagree about which database they're using.
+logger.info("Database URL: {}", settings.database_url)
 
 engine: Engine = create_engine(
     settings.database_url,

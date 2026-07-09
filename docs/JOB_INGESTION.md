@@ -15,17 +15,20 @@ no automatic application submission, no live scraping of Indeed/TotalJobs.**
 These were explicit trade-offs agreed before implementation, not
 unilateral choices — recorded here for anyone revisiting this milestone:
 
-1. **Indeed and TotalJobs are interface-only stubs.** Both prohibit
+1. **Indeed, TotalJobs, Glassdoor, CV-Library, and company career pages
+   are interface-only stubs.** Indeed/TotalJobs/Glassdoor prohibit
    automated scraping in their Terms of Service and run aggressive
-   anti-bot protection; neither offers a public jobseeker API comparable
-   to Reed's. `IndeedProvider`/`TotalJobsProvider` fully implement the
-   `JobProvider` contract (so they slot into the registry/orchestrator/
-   tests identically to a real provider) but `fetch_jobs()` always raises
-   `NotImplementedError` with a message pointing at what a real
-   implementation would need (an official partner feed or a licensed
-   aggregator API). NHS Jobs and Trac Jobs (public-sector recruitment
-   sites, lower ToS risk) and Reed (a real, documented public API) are
-   the three real providers.
+   anti-bot protection, with no public jobseeker API comparable to
+   Reed's; CV-Library's feed program is a paid partner arrangement
+   requiring a signed agreement this codebase doesn't have credentials
+   for; "company career pages" isn't one site at all (see
+   `company_career_page_provider.py`'s own docstring). All five fully
+   implement the `JobProvider` contract (so they slot into the registry/
+   orchestrator/tests identically to a real provider) but `fetch_jobs()`
+   always raises `NotImplementedError` with a message pointing at exactly
+   what a real implementation would need. NHS Jobs and Trac Jobs
+   (public-sector recruitment sites, lower ToS risk) and Reed (a real,
+   documented public API) are the three real providers today.
 2. **AI matching is automatic; document generation never is.** Every
    prior AI-integration milestone in this project made real Anthropic
    calls explicit-click-only, specifically to control cost and avoid
@@ -57,14 +60,18 @@ job_automation/ingestion/
     provider_registry.py      PROVIDER_REGISTRY: dict[str, type[JobProvider]]
     ingestion_orchestrator.py run_ingestion() — runs every configured provider, aggregates results
     auto_match_service.py     process_new_jobs() — AI-matches new jobs, publishes notifications
+    multi_location.py         run_per_location() — one search per configured location, aggregated
     providers/
-        nhs_provider.py        wraps the existing scrapers.nhs.NHSScraper
-        trac_provider.py        wraps the new scrapers.trac.TracScraper
-        reed_provider.py        calls Reed's public JSON API directly (httpx, no browser)
-        indeed_provider.py       stub — fetch_jobs() raises NotImplementedError
-        totaljobs_provider.py    stub — fetch_jobs() raises NotImplementedError
+        nhs_provider.py                   wraps the existing scrapers.nhs.NHSScraper
+        trac_provider.py                   wraps the new scrapers.trac.TracScraper
+        reed_provider.py                   calls Reed's public JSON API directly (httpx, no browser)
+        indeed_provider.py                 stub — fetch_jobs() raises NotImplementedError
+        totaljobs_provider.py              stub — fetch_jobs() raises NotImplementedError
+        glassdoor_provider.py              stub — fetch_jobs() raises NotImplementedError
+        cv_library_provider.py             stub — fetch_jobs() raises NotImplementedError
+        company_career_page_provider.py    stub — see its own docstring, not a generalizable site
 
-job_automation/scrapers/trac/   new Playwright-based scraper, mirrors scrapers/nhs/ exactly:
+job_automation/scrapers/trac/   Playwright-based scraper, mirrors scrapers/nhs/ exactly:
     trac_urls.py, trac_search.py (+ TracPaginator), trac_parser.py, trac_scraper.py
 ```
 
@@ -251,6 +258,73 @@ tests follow the same pattern the NHS Jobs scraper already established:
 - **`tests/test_web_dashboard.py`** additions — the Jobs page's `source`
   filter, and the two new dashboard/analytics API endpoints.
 
+## Multi-location search
+
+NHS Jobs and Trac Jobs' location filters each narrow a search to *one*
+place — there's no "search these three cities at once" query. Both
+providers therefore call `ingestion.multi_location.run_per_location()`,
+which runs one full search per entry in `settings.scrape_locations` (or a
+single unfiltered search if none are configured), aggregating every
+`ProviderRunStats` field across all of them. One location's search failing
+doesn't lose the others' results — logged and skipped, so e.g. a
+CloudFront hiccup on one city's search doesn't zero out an otherwise
+successful run. A single `JobIngestionService` (and its `created_job_ids`
+tracking) is shared across every location's run within one provider, so
+dedup and stats stay correct across the whole run, not just within one
+location.
+
+Reed doesn't use this helper: its API already takes keyword *and* location
+as two independent parameters on the same request, so it loops over
+`(keyword, location)` pairs itself rather than needing a separate page load
+per location the way a browser-driven search does.
+
+## Adding a new job source safely
+
+Before writing any code:
+
+1. **Check the source's Terms of Service and `robots.txt`.** If automated
+   access to job listings is explicitly prohibited (Indeed, TotalJobs,
+   Glassdoor all are) or requires a paid partner agreement you don't have
+   (CV-Library), stop here — add a disabled placeholder instead (see
+   below), don't scrape around the restriction.
+2. **Prefer an official API/feed over HTML scraping** wherever one exists
+   — Reed's public jobseeker API is the model: no browser, no fragile
+   selectors, explicitly documented and supported for this exact use case.
+
+If the source is compliant, implement a real provider:
+
+1. Add `job_automation/ingestion/providers/<source>_provider.py` with a
+   `JobProvider` subclass: set `source_name` (this becomes `Job.source_site`
+   and must be unique), implement `fetch_jobs(session) -> ProviderRunStats`.
+2. If it's a plain HTTP API, follow `reed_provider.py`: a direct `httpx`
+   call, normalize each result into a `ParsedJob`, persist via
+   `JobIngestionService.save_parsed_job()` — no Playwright needed.
+3. If it's an HTML-only site with no API, follow `scrapers/nhs/`'s
+   composition (`BaseScraper`/`BaseSearch`/`BaseParser`/`BasePaginator`)
+   rather than writing bespoke Playwright code, then wrap it in a
+   `JobProvider` the same way `nhs_provider.py`/`trac_provider.py` do.
+4. If the site's location filter only accepts one location per query, use
+   `ingestion.multi_location.run_per_location()` (see above) rather than
+   joining locations into one string.
+5. Register the class in `provider_registry.py`'s `PROVIDER_REGISTRY` dict.
+6. Only add it to `settings.job_ingestion_providers`'s default list once
+   it's real and configured — a stub or an unconfigured provider (e.g.
+   Trac Jobs with no `TRAC_JOBS_BASE_URL` set) left in that list only ever
+   produces a `provider_errors` entry on every run.
+7. Add tests mirroring `test_ingestion.py`'s existing shape: a real-fetch
+   test (mocked HTTP or a local fixture server, never a live call), a
+   missing-configuration test if applicable, and confirm
+   `run_ingestion()`/`import_provider_jobs.run()` still isolate this
+   provider's failures from every other configured provider.
+
+If the source *isn't* compliant yet (no API, ToS prohibits scraping, or a
+partner agreement you don't have credentials for), add a disabled
+placeholder instead — see `indeed_provider.py`/`glassdoor_provider.py` for
+the pattern: full `JobProvider` contract implemented, `fetch_jobs()` always
+raises `NotImplementedError` with a message explaining exactly what's
+missing, registered in `PROVIDER_REGISTRY` (so it's discoverable and
+testable) but excluded from the default `job_ingestion_providers` list.
+
 ## Known limitations
 
 - **Trac Jobs' CSS selectors are fixture-verified only**, not verified
@@ -264,8 +338,10 @@ tests follow the same pattern the NHS Jobs scraper already established:
 - **`ReedProvider` fetches one page (up to 100 results) per
   (keyword, location) combination**, not paginating further with
   `resultsToSkip` — a scope limit, not a technical ceiling.
-- **Indeed/TotalJobs remain unimplemented** pending a compliant data
-  source — see "scope decisions" above.
+- **Indeed/TotalJobs/Glassdoor/CV-Library/company career pages remain
+  unimplemented** pending a compliant data source — see "scope decisions"
+  above and each provider module's own docstring for what's specifically
+  missing.
 
 ## Manual live verification (run this on a machine with internet access)
 

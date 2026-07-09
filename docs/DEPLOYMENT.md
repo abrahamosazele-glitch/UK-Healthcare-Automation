@@ -212,23 +212,37 @@ Point nginx's own health check (or an uptime monitor) at `/health`.
 
 ## After deploying, on any platform
 
-1. **Run the live-provider verification runbook** from a machine with
-   real internet access (this project's own sandbox never had any — see
-   docs/JOB_INGESTION.md's "Manual live verification" section for how
-   that was established):
+1. **Run the live-provider verification runbook against the *deployed*
+   database, not your laptop's.** `DATABASE_URL` is read from whatever
+   environment the process actually runs in — running
+   `verify_live_production.py` from a bare local shell reads your local
+   `.env` (your local SQLite file), which has nothing to do with the
+   database the deployed site reads from. On Railway, run it through the
+   Railway CLI so it inherits the deployed service's real environment
+   variables instead:
    ```bash
-   python scripts/verify_live_production.py --yes
+   railway run python scripts/verify_live_production.py --yes
    ```
-   This runs the exact same ingestion + auto-match code path the daily
-   scheduled task uses, against your real `DATABASE_URL`, and reports a
-   per-provider summary. Configure `REED_API_KEY`/`TRAC_JOBS_BASE_URL`
-   first (see docs/JOB_INGESTION.md) — without them, Reed/Trac Jobs will
-   report a clear per-provider error rather than importing anything,
-   while NHS Jobs (no API key needed) still runs.
-2. **Log in and click through the app** — dashboard, job search, AI
+   (Render/a VPS: SSH into the running container/instance and run it
+   there, for the same reason.) This runs the exact same ingestion +
+   auto-match code path the daily scheduled task uses, against your real
+   `DATABASE_URL`, and reports a per-provider summary. Configure
+   `REED_API_KEY`/`TRAC_JOBS_BASE_URL` first (see docs/JOB_INGESTION.md)
+   — without them, Reed/Trac Jobs will report a clear per-provider error
+   rather than importing anything, while NHS Jobs (no API key needed)
+   still runs.
+2. **Confirm which database the deployed site is actually using** —
+   `railway run python scripts/db_diagnostics.py` (or the authenticated
+   `GET /diagnostics/database` route on the live site) prints the active
+   `database_url`, job counts by source, the latest jobs, and how many
+   scheduler task runs are recorded. If this shows 0 jobs right after a
+   local scraper run reported success, that's the tell: the scraper ran
+   against your local database, not the deployed one — see step 1.
+3. **Log in and click through the app** — dashboard, job search, AI
    matches, generate a document, view the scheduler page. `/health`
    should report `{"status": "ok", "database": "ok", ...}`.
-3. **Turn on the scheduler** (`SCHEDULER_ENABLED=true`) once you're
+4. **Turn on the scheduler** (`SCHEDULER_ENABLED=true`) once you're
    satisfied ingestion works — this is what makes the daily
    NHS/Trac/Reed refresh, AI auto-matching, and closing-soon
-   notifications actually run without anyone clicking a button.
+   notifications actually run inside the deployed app itself, without
+   anyone clicking a button or running a script by hand.

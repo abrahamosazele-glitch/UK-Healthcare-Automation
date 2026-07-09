@@ -102,6 +102,41 @@ def test_nhs_paginator_detects_next_and_last_page_and_page_count(page: Page, nhs
     assert paginator.current_page == 2
 
 
+def test_nhs_paginator_total_pages_handles_two_matching_spans(page: Page) -> None:
+    """On a real "middle" page of NHS Jobs' live results (both "previous"
+    and "next" pagination links visible), `span.nhsuk-pagination__page`
+    matches *two* elements — one inside each link, both reporting the same
+    "Page X of Y" text. Confirmed live: `total_pages()` must not raise
+    Playwright's strict-mode error here (which previously propagated up
+    and aborted the whole scrape after page 1) and must still return the
+    correct count."""
+    page_manager = _page_manager(BrowserConfig())
+    paginator = NHSPaginator(page_manager, max_pages=10)
+
+    page.set_content(
+        """
+        <nav class="nhsuk-pagination" role="navigation" aria-label="Pagination">
+          <ul class="nhsuk-list nhsuk-pagination__list">
+            <li class="nhsuk-pagination-item--previous">
+              <a class="nhsuk-pagination__link nhsuk-pagination__link--previous" href="?page=1">
+                <span class="nhsuk-pagination__title">Previous</span>
+                <span class="nhsuk-pagination__page">Page 1 of 842</span>
+              </a>
+            </li>
+            <li class="nhsuk-pagination-item--next">
+              <a class="nhsuk-pagination__link nhsuk-pagination__link--next" href="?page=3">
+                <span class="nhsuk-pagination__title">Next</span>
+                <span class="nhsuk-pagination__page">Page 3 of 842</span>
+              </a>
+            </li>
+          </ul>
+        </nav>
+        """
+    )
+
+    assert paginator.total_pages(page) == 842
+
+
 def test_nhs_paginator_respects_max_pages_safety_cap(page: Page, nhs_fixture_url: str) -> None:
     page_manager = _page_manager(BrowserConfig())
     paginator = NHSPaginator(page_manager, max_pages=1)

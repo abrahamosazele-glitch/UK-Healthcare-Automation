@@ -179,6 +179,47 @@ def test_health_check_requires_no_authentication(db_session: Session) -> None:
         app.dependency_overrides.clear()
 
 
+# --- Database diagnostics (Database Unification milestone) -------------------
+
+
+def test_database_diagnostics_reports_job_counts_and_database_url(
+    client: TestClient, db_session: Session
+) -> None:
+    user = User(email="diagnostics@example.com", full_name="Diagnostics Tester", hashed_password="unused-in-these-tests")
+    employer = Employer(name="Riverside NHS Trust")
+    db_session.add_all([user, employer])
+    db_session.flush()
+    db_session.add_all(
+        [
+            Job(employer=employer, title="Staff Nurse", source_site="nhs_jobs", external_id="D1", url="https://x/d1"),
+            Job(employer=employer, title="HCA", source_site="nhs_jobs", external_id="D2", url="https://x/d2"),
+            Job(employer=employer, title="Support Worker", source_site="reed", external_id="D3", url="https://x/d3"),
+        ]
+    )
+    db_session.commit()
+
+    response = client.get("/diagnostics/database")
+    assert response.status_code == 200
+    body = response.json()
+
+    assert body["database_url"]
+    assert body["total_jobs"] == 3
+    assert body["jobs_by_source"]["nhs_jobs"] == 2
+    assert body["jobs_by_source"]["reed"] == 1
+    assert len(body["latest_jobs"]) == 3
+    assert body["scheduler_task_run_count"] == 0
+
+
+def test_database_diagnostics_requires_authentication(db_session: Session) -> None:
+    app.dependency_overrides[get_db_session] = lambda: db_session
+    try:
+        with TestClient(app) as unauthenticated_client:
+            response = unauthenticated_client.get("/diagnostics/database")
+            assert response.status_code == 401
+    finally:
+        app.dependency_overrides.clear()
+
+
 def test_unhandled_exception_returns_json_500_instead_of_crashing(client: TestClient) -> None:
     """Production logging hardening: a genuinely unexpected exception (not
     an `HTTPException`, not `NotAuthenticatedError`) must still produce a

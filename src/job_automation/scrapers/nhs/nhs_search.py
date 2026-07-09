@@ -34,9 +34,12 @@ NEXT_PAGE_SELECTOR = 'a[data-test="search-next-page"]'
 #: guessing a data-test string — directly confirmed empty/absent on page 1,
 #: and expected to hold an `<a>` on later pages by symmetry with "next".
 PREVIOUS_PAGE_SELECTOR = "li.nhsuk-pagination-item--previous a"
-#: Lives inside the "next" link (`<span class="nhsuk-pagination__page">Page
-#: X of Y</span>`), so it's naturally unavailable on the last page — same
-#: graceful-degradation behavior `total_pages()` already had.
+#: Lives inside both the "previous" and "next" links
+#: (`<span class="nhsuk-pagination__page">Page X of Y</span>`) whenever
+#: they're present — confirmed against the live site that a middle page
+#: (both links visible) has *two* matching spans, not one, so `total_pages()`
+#: must never assume a single match (see its own docstring for why `.first`
+#: is safe here: both spans report the same page count).
 PAGE_INFO_SELECTOR = "span.nhsuk-pagination__page"
 _PAGE_INFO_RE = re.compile(r"Page\s+(\d+)\s+of\s+(\d+)", re.IGNORECASE)
 
@@ -110,10 +113,30 @@ class NHSPaginator(BasePaginator):
 
     def total_pages(self, page: "Page") -> int | None:
         """Best-effort read of a "Page X of Y" indicator, for logging/stats
-        ("page count") — returns None if the page doesn't show one."""
-        if not self._page_manager.element_exists(page, PAGE_INFO_SELECTOR, timeout_ms=1000):
+        ("page count") only — never allowed to abort scraping. Returns
+        None if the page doesn't show one, if more than one is present in
+        a way that still can't be read, or if anything else about reading
+        it fails.
+
+        `PAGE_INFO_SELECTOR` legitimately matches *two* elements on any
+        page where both "previous" and "next" links are visible (each
+        carries its own copy of the same "Page X of Y" text) — `.first`
+        reads whichever appears first in the DOM; since both report the
+        same total, which one is read doesn't matter. Without `.first`,
+        Playwright's strict mode raises on a multi-match locator, which
+        previously propagated out of this method and aborted the whole
+        scrape after page 1 — this method must never let that (or any
+        other) exception escape, since pagination metadata is for logging
+        only."""
+        try:
+            locator = page.locator(PAGE_INFO_SELECTOR).first
+            if locator.count() == 0:
+                return None
+            text = locator.text_content() or ""
+        except Exception as exc:
+            logger.warning("Could not read NHS Jobs page count: {}", exc)
             return None
-        text = page.locator(PAGE_INFO_SELECTOR).text_content() or ""
+
         match = _PAGE_INFO_RE.search(text)
         if not match:
             logger.warning("Could not parse page count from {!r}", text)

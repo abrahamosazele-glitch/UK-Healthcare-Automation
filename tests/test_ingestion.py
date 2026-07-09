@@ -24,6 +24,10 @@ from job_automation.database.models import Employer, Job, JobMatch, Notification
 from job_automation.ingestion import PROVIDER_REGISTRY, get_provider, run_ingestion
 from job_automation.ingestion.auto_match_service import process_new_jobs
 from job_automation.ingestion.job_provider import JobProvider, ProviderRunStats
+from job_automation.ingestion.multi_location import run_per_location
+from job_automation.ingestion.providers.company_career_page_provider import CompanyCareerPageProvider
+from job_automation.ingestion.providers.cv_library_provider import CVLibraryProvider
+from job_automation.ingestion.providers.glassdoor_provider import GlassdoorProvider
 from job_automation.ingestion.providers.indeed_provider import IndeedProvider
 from job_automation.ingestion.providers.reed_provider import ReedProvider, ReedProviderError
 from job_automation.ingestion.providers.totaljobs_provider import TotalJobsProvider
@@ -35,13 +39,107 @@ from job_automation.scheduler.tasks import check_closing_soon_jobs, import_provi
 # --- Provider registry -------------------------------------------------------
 
 
-def test_provider_registry_has_all_five_providers() -> None:
-    assert set(PROVIDER_REGISTRY) == {"nhs_jobs", "trac_jobs", "reed", "indeed", "totaljobs"}
+def test_provider_registry_has_all_registered_providers() -> None:
+    assert set(PROVIDER_REGISTRY) == {
+        "nhs_jobs",
+        "trac_jobs",
+        "reed",
+        "indeed",
+        "totaljobs",
+        "glassdoor",
+        "cv_library",
+        "company_career_pages",
+    }
+
+
+def test_disabled_placeholder_providers_are_excluded_from_default_ingestion_list() -> None:
+    """Placeholder providers are discoverable/testable via the registry, but
+    must never be part of the default provider list — running them would
+    only ever produce a guaranteed failure."""
+    disabled = {"indeed", "totaljobs", "glassdoor", "cv_library", "company_career_pages"}
+    assert disabled.isdisjoint(settings.job_ingestion_providers)
 
 
 def test_get_provider_raises_for_unknown_source() -> None:
     with pytest.raises(KeyError):
         get_provider("not_a_real_source")
+
+
+# --- Multi-location helper ----------------------------------------------------
+
+
+def test_run_per_location_calls_once_per_location_and_aggregates_stats() -> None:
+    seen_locations: list[str | None] = []
+
+    def _run_one(location: str | None) -> ProviderRunStats:
+        seen_locations.append(location)
+        return ProviderRunStats(source="test", jobs_seen=2, jobs_created=1, jobs_updated=1)
+
+    result = run_per_location("test", ["London", "Manchester", "Birmingham"], _run_one)
+
+    assert seen_locations == ["London", "Manchester", "Birmingham"], "one call per location, not one joined string"
+    assert result.jobs_seen == 6
+    assert result.jobs_created == 3
+    assert result.jobs_updated == 3
+
+
+def test_run_per_location_runs_once_with_none_when_no_locations_configured() -> None:
+    seen_locations: list[str | None] = []
+
+    def _run_one(location: str | None) -> ProviderRunStats:
+        seen_locations.append(location)
+        return ProviderRunStats(source="test", jobs_seen=1)
+
+    result = run_per_location("test", [], _run_one)
+
+    assert seen_locations == [None]
+    assert result.jobs_seen == 1
+
+
+def test_run_per_location_empty_results_produce_zeroed_stats_not_an_error() -> None:
+    def _run_one(location: str | None) -> ProviderRunStats:
+        return ProviderRunStats(source="test")  # a real search that simply found nothing
+
+    result = run_per_location("test", ["London"], _run_one)
+
+    assert result.jobs_seen == 0
+    assert result.jobs_created == 0
+    assert result.newly_created_job_ids == []
+
+
+def test_run_per_location_one_location_failing_does_not_stop_the_others() -> None:
+    def _run_one(location: str | None) -> ProviderRunStats:
+        if location == "Manchester":
+            raise RuntimeError("simulated search failure for Manchester")
+        return ProviderRunStats(source="test", jobs_seen=1, jobs_created=1)
+
+    result = run_per_location("test", ["London", "Manchester", "Birmingham"], _run_one)
+
+    # London + Birmingham succeeded; Manchester's failure was logged and skipped.
+    assert result.jobs_seen == 2
+    assert result.jobs_created == 2
+
+
+def test_nhs_provider_searches_each_configured_location_separately(
+    db_session, nhs_fixture_url: str, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """With N configured locations, NHSProvider must run N separate
+    searches (one per location) rather than joining them into one query
+    string — verified by pointing two locations at the same fixture page
+    and confirming jobs_seen is double a single-location run's count, i.e.
+    the search genuinely ran twice."""
+    from job_automation.ingestion.providers.nhs_provider import NHSProvider
+
+    monkeypatch.setattr(settings, "scrape_keywords", ["Registered Nurse"])
+    monkeypatch.setattr(settings, "scrape_locations", ["London"])
+    single = NHSProvider(base_url=nhs_fixture_url, search_path="/search_page_1.html").fetch_jobs(db_session)
+    db_session.commit()
+
+    monkeypatch.setattr(settings, "scrape_locations", ["London", "Manchester"])
+    doubled = NHSProvider(base_url=nhs_fixture_url, search_path="/search_page_1.html").fetch_jobs(db_session)
+    db_session.commit()
+
+    assert doubled.jobs_seen == single.jobs_seen * 2
 
 
 def test_trac_provider_uses_configured_base_url_when_registry_constructed(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -63,7 +161,7 @@ def test_trac_provider_explicit_base_url_overrides_settings(monkeypatch: pytest.
     assert provider._base_url == "https://explicit-override.trac.jobs"
 
 
-# --- Indeed / TotalJobs stubs -------------------------------------------------
+# --- Disabled placeholder providers -------------------------------------------
 
 
 def test_indeed_provider_raises_not_implemented_with_clear_message(db_session) -> None:
@@ -75,6 +173,24 @@ def test_indeed_provider_raises_not_implemented_with_clear_message(db_session) -
 def test_totaljobs_provider_raises_not_implemented_with_clear_message(db_session) -> None:
     provider = TotalJobsProvider()
     with pytest.raises(NotImplementedError, match="compliant data source"):
+        provider.fetch_jobs(db_session)
+
+
+def test_glassdoor_provider_raises_not_implemented_with_clear_message(db_session) -> None:
+    provider = GlassdoorProvider()
+    with pytest.raises(NotImplementedError, match="compliant data source"):
+        provider.fetch_jobs(db_session)
+
+
+def test_cv_library_provider_raises_not_implemented_with_clear_message(db_session) -> None:
+    provider = CVLibraryProvider()
+    with pytest.raises(NotImplementedError, match="partner program"):
+        provider.fetch_jobs(db_session)
+
+
+def test_company_career_page_provider_raises_not_implemented_with_clear_message(db_session) -> None:
+    provider = CompanyCareerPageProvider()
+    with pytest.raises(NotImplementedError, match="dedicated JobProvider subclass"):
         provider.fetch_jobs(db_session)
 
 
@@ -134,7 +250,12 @@ def test_reed_provider_normalizes_and_persists_jobs(db_session, monkeypatch: pyt
     assert job.closing_date == date(2026, 8, 1)
 
 
-def test_reed_provider_request_failure_raises_reed_provider_error(db_session, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_reed_provider_request_failure_does_not_abort_whole_run(db_session, monkeypatch: pytest.MonkeyPatch) -> None:
+    """A single (keyword, location) request failing is logged and skipped,
+    not raised out of fetch_jobs() — one bad search shouldn't lose every
+    other combination's results. A missing API key (a configuration
+    problem, not a per-request one) still raises immediately instead;
+    see test_reed_provider_requires_an_api_key."""
     monkeypatch.setattr(settings, "scrape_keywords", ["Staff Nurse"])
     monkeypatch.setattr(settings, "scrape_locations", ["London"])
 
@@ -143,8 +264,10 @@ def test_reed_provider_request_failure_raises_reed_provider_error(db_session, mo
 
     client = httpx.Client(transport=httpx.MockTransport(handler))
     provider = ReedProvider(api_key="fake-key", http_client=client)
-    with pytest.raises(ReedProviderError, match="Reed API request failed"):
-        provider.fetch_jobs(db_session)
+    stats = provider.fetch_jobs(db_session)
+
+    assert stats.jobs_seen == 0
+    assert stats.jobs_created == 0
 
 
 # --- Cross-source deduplication -----------------------------------------------
